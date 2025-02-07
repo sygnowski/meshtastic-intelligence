@@ -1,4 +1,4 @@
-package io.github.s7i.meshtastic.intelligence;
+package io.github.s7i.meshtastic.intelligence.io;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.Serializer;

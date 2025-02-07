@@ -1,0 +1,8 @@
+---
+name: Mesh
+kafka:
+  - 'aaa:bbb'
+  - 'ccc:ddd'
+topics:
+  - name: "meshtastic-from-radio"
+    tag: source
