@@ -3,11 +3,13 @@ package io.github.s7i.meshtastic.intelligence;
 import com.geeksville.mesh.MeshProtos.FromRadio;
 import com.geeksville.mesh.MeshProtos.FromRadio.PayloadVariantCase;
 import com.geeksville.mesh.MeshProtos.MeshPacket;
-import io.github.s7i.meshtastic.intelligence.io.MeshRowDeserializer;
 import io.github.s7i.meshtastic.intelligence.io.Packet;
+import io.github.s7i.meshtastic.intelligence.io.PacketDeserializer;
 import io.github.s7i.meshtastic.intelligence.io.PacketSerializer;
+import java.time.Duration;
 import java.util.Properties;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.flink.api.common.eventtime.SerializableTimestampAssigner;
 import org.apache.flink.api.common.eventtime.WatermarkStrategy;
 import org.apache.flink.api.java.utils.ParameterTool;
 import org.apache.flink.connector.kafka.source.KafkaSource;
@@ -32,11 +34,12 @@ public class IntelligenceJob {
             var kafka = KafkaSource.<Packet>builder()
                   .setProperties(new Properties())
                   .setTopics(cfg.getTopic("source"))
-                  .setValueOnlyDeserializer(new MeshRowDeserializer())
+                  .setDeserializer(new PacketDeserializer())
                   .build();
 
             var stream = env.fromSource(kafka,
-                  WatermarkStrategy.forMonotonousTimestamps(), "mesh packets")
+                  WatermarkStrategy.<Packet>forBoundedOutOfOrderness(Duration.ofMinutes(5))
+                        .withTimestampAssigner((SerializableTimestampAssigner<Packet>) (element, recordTimestamp) -> element.timestamp()), "mesh packets")
                   .filter(packet -> FromRadio.parseFrom(packet.payload())
                         .getPayloadVariantCase() == PayloadVariantCase.PACKET)
                   .map( packet -> {

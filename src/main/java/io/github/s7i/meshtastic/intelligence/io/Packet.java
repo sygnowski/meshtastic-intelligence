@@ -1,9 +1,9 @@
 package io.github.s7i.meshtastic.intelligence.io;
 
-import lombok.Getter;
+import lombok.Data;
 import lombok.experimental.Accessors;
 
-@Getter
+@Data
 @Accessors(fluent = true)
 public class Packet {
 
@@ -15,5 +15,5 @@ public class Packet {
     }
 
     byte[] payload;
-
+    long timestamp;
 }

@@ -11,6 +11,7 @@ public class PacketSerializer extends Serializer<Packet> {
 
     @Override
     public void write(Kryo kryo, Output output, Packet packet) {
+        output.writeLong(packet.timestamp, true);
         output.writeInt(packet.payload.length, true);
         output.writeBytes(packet.payload);
     }
@@ -18,6 +19,8 @@ public class PacketSerializer extends Serializer<Packet> {
     @Override
     public Packet read(Kryo kryo, Input input, Class<Packet> type) {
         Packet packet = new Packet();
+
+        packet.timestamp = input.readLong(true);
 
         int len = input.readInt(true);
         byte[] paylod = new byte[len];
