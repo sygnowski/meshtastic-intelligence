@@ -13,6 +13,7 @@ mainClassName = 'io.github.s7i.meshtastic.intelligence.IntelligenceJob'
 description = 'Flink Meshtastic'
 
 ext {
+    grcpVersion= '1.51.0'
     javaVersion = '1.8'
     flinkVersion = '1.17.2'
     scalaBinaryVersion = '_2.12'
@@ -52,6 +53,9 @@ configurations {
 }
 // declare the dependencies for your production and test code
 dependencies {
+    implementation 'com.google.protobuf:protobuf-java:3.21.9'
+    implementation "io.grpc:grpc-stub:$grcpVersion"
+    implementation "io.grpc:grpc-protobuf:$grcpVersion"
     // --------------------------------------------------------------
     // Compile-time dependencies that should NOT be part of the
     // shadow (uber) jar and are provided in the lib folder of Flink
