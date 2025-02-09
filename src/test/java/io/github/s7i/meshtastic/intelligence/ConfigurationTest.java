@@ -3,7 +3,6 @@ package io.github.s7i.meshtastic.intelligence;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import io.github.s7i.meshtastic.intelligence.Configuration.Topic;
 import org.junit.jupiter.api.Test;
 
 class ConfigurationTest {
@@ -15,16 +14,14 @@ class ConfigurationTest {
 
         assertNotNull(c);
 
-        var k = c.getKafka();
+        var t = c.getTopic("source");
 
-        assertTrue(() -> k.contains("aaa:bbb"));
-        assertTrue(() -> k.contains("ccc:ddd"));
+        var k = t.getKafka();
 
-        assertTrue(() -> c.getTopics()
-              .stream()
-              .filter(t -> t.getTag().equals("source"))
-              .map(Topic::getName)
-              .anyMatch("meshtastic-from-radio"::equals));
+        assertTrue(() -> k.contains("bootstrap.servers=kafka123"));
+        assertTrue(() -> k.contains("client.id=1231"));
+
+        assertTrue(() -> "meshtastic-from-radio".equals(t.getName()));
 
     }
 }

@@ -1,8 +1,36 @@
 ---
 name: Mesh
-kafka:
-  - 'aaa:bbb'
-  - 'ccc:ddd'
 topics:
   - name: "meshtastic-from-radio"
     tag: source
+    kafka: >-
+      bootstrap.servers=kafka123
+      client.id=1231
+options:
+  - name: flags
+    value:
+  - name: catalog.jdbc
+    value: jdbc:postgresql://localhost:5432/
+  - name: catalog.name
+    value: mesh-catalog
+  - name: user.name
+    value:
+  - name: user.password
+    value:
+  - name: database.name
+    value:
+  - name: sql.create.mesh.table
+    value: >-
+      CREATE TABLE IF NOT EXISTS mesh_node_package (
+      form_node INTEGER,
+      to_node INTEGER
+      ) WITH (
+      'connector' = 'jdbc',
+      'url' = 'jdbc:postgresql://localhost:5432/mydb',
+      'table-name' = 'mesh_node_package',
+      'username' = 'myuser',
+      'password' = 'mypassword'
+      )
+  - name: description
+    value: >-
+      Meshtastic Radio records intelligence.

@@ -52,10 +52,6 @@ configurations {
 }
 // declare the dependencies for your production and test code
 dependencies {
-    implementation 'org.yaml:snakeyaml:2.3'
-    implementation 'com.google.protobuf:protobuf-java:3.21.9'
-    implementation "io.grpc:grpc-stub:$grcpVersion"
-    implementation "io.grpc:grpc-protobuf:$grcpVersion"
     // --------------------------------------------------------------
     // Compile-time dependencies that should NOT be part of the
     // shadow (uber) jar and are provided in the lib folder of Flink
@@ -66,12 +62,21 @@ dependencies {
     implementation "org.apache.flink:flink-table-api-java:${flinkVersion}"
     implementation "org.apache.flink:flink-table-api-java-bridge:${flinkVersion}"
     implementation "org.apache.flink:flink-clients:${flinkVersion}"
-    implementation "org.apache.flink:flink-connector-kafka:${flinkVersion}"
+    //implementation "org.apache.flink:flink-connector-kafka:${flinkVersion}"
+    //implementation "org.apache.flink:flink-connector-jdbc:3.2.0-1.19"
     // --------------------------------------------------------------
     // Dependencies that should be part of the shadow jar, e.g.
     // connectors. These must be in the flinkShadowJar configuration!
     // --------------------------------------------------------------
-    //flinkShadowJar "org.apache.flink:flink-connector-kafka:${flinkVersion}"
+    flinkShadowJar "org.apache.flink:flink-connector-kafka:${flinkVersion}"
+    flinkShadowJar project(":mesh-proto"),
+            'org.yaml:snakeyaml:2.3',
+            'com.google.protobuf:protobuf-java:3.21.9',
+            "io.grpc:grpc-stub:$grcpVersion",
+            "io.grpc:grpc-protobuf:$grcpVersion",
+            "org.postgresql:postgresql:42.7.5",
+            "org.apache.flink:flink-connector-jdbc:1.16.3"
+
     runtimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:${log4jVersion}"
     runtimeOnly "org.apache.logging.log4j:log4j-api:${log4jVersion}"
     runtimeOnly "org.apache.logging.log4j:log4j-core:${log4jVersion}"

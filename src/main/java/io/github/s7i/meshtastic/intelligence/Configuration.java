@@ -33,23 +33,35 @@ public class Configuration {
     @Data
     @NoArgsConstructor
     public static class Topic {
-
         private String name;
         private String tag;
+        private String kafka;
+    }
+
+    @Data
+    public static class Option {
+        private String name;
+        private String value;
     }
 
     private String name;
-    private List<String> kafka;
     private List<Topic> topics;
+    private List<Option> options;
 
-
-    public String getTopic(String tag) {
+    public Topic getTopic(String tag) {
         return getTopics()
               .stream()
               .filter(t -> t.getTag().equals(tag))
-              .map(Topic::getName)
               .findFirst()
-              .orElseThrow();
+              .orElseThrow(() -> new RuntimeException("missing config option:" + tag));
     }
 
+    public String getOption(String optionName) {
+        return getOptions()
+              .stream()
+              .filter(o -> o.getName().equals(optionName))
+              .map(Option::getValue)
+              .findFirst()
+              .orElseThrow(() -> new RuntimeException("missing config option:" + optionName));
+    }
 }
