@@ -22,6 +22,6 @@ public class PacketDeserializer implements KafkaRecordDeserializationSchema<Pack
 
         pck.timestamp(consumerRecord.timestamp());
 
-        collector.collect(new Packet());
+        collector.collect(pck);
     }
 }

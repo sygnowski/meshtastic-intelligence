@@ -15,9 +15,10 @@ description = 'Flink Meshtastic'
 ext {
     grcpVersion= '1.51.0'
     flinkVersion = '1.17.2'
-    scalaBinaryVersion = '_2.12'
+    scalaBinVer = '_2.12'
     slf4jVersion = '1.7.36'
     log4jVersion = '2.17.1'
+    flinkJdbcVer = '3.1.2-1.17'
 }
 
 sourceCompatibility = JavaVersion.VERSION_11
@@ -74,8 +75,8 @@ dependencies {
             'com.google.protobuf:protobuf-java:3.21.9',
             "io.grpc:grpc-stub:$grcpVersion",
             "io.grpc:grpc-protobuf:$grcpVersion",
-            "org.postgresql:postgresql:42.7.5",
-            "org.apache.flink:flink-connector-jdbc:1.16.3"
+//            "org.postgresql:postgresql:42.7.5",
+            "org.apache.flink:flink-connector-jdbc:${flinkJdbcVer}"
 
     runtimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:${log4jVersion}"
     runtimeOnly "org.apache.logging.log4j:log4j-api:${log4jVersion}"

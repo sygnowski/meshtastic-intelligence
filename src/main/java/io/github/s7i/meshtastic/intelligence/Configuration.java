@@ -33,6 +33,7 @@ public class Configuration {
     @Data
     @NoArgsConstructor
     public static class Topic {
+
         private String name;
         private String tag;
         private String kafka;
@@ -40,6 +41,7 @@ public class Configuration {
 
     @Data
     public static class Option {
+
         private String name;
         private String value;
     }
@@ -63,5 +65,22 @@ public class Configuration {
               .map(Option::getValue)
               .findFirst()
               .orElseThrow(() -> new RuntimeException("missing config option:" + optionName));
+    }
+
+    public String getOption(String optionName, String defaultValue) {
+        return getOptions()
+              .stream()
+              .filter(o -> o.getName().equals(optionName))
+              .map(Option::getValue)
+              .findFirst()
+              .orElse(defaultValue);
+    }
+
+    public void onTrue(String optionName, Runnable iftrue) {
+        if (Boolean.parseBoolean(getOption(optionName, ""))) {
+            iftrue.run();
+        } else {
+            log.debug("no action on option: {}", optionName);
+        }
     }
 }
