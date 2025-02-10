@@ -7,6 +7,7 @@ import io.github.s7i.meshtastic.intelligence.Configuration.Topic;
 import io.github.s7i.meshtastic.intelligence.io.Packet;
 import io.github.s7i.meshtastic.intelligence.io.PacketDeserializer;
 import java.io.StringReader;
+import java.sql.Timestamp;
 import java.time.Duration;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
@@ -15,7 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.common.eventtime.WatermarkStrategy;
 import org.apache.flink.api.common.typeinfo.Types;
 import org.apache.flink.api.java.utils.ParameterTool;
-import org.apache.flink.connector.jdbc.JdbcConnectionOptions;
+import org.apache.flink.connector.jdbc.JdbcConnectionOptions.JdbcConnectionOptionsBuilder;
 import org.apache.flink.connector.jdbc.JdbcExecutionOptions;
 import org.apache.flink.connector.jdbc.JdbcSink;
 import org.apache.flink.connector.jdbc.catalog.JdbcCatalog;
@@ -107,20 +108,23 @@ public class MeshJob extends JobStub {
               ))
               .keyBy(value -> value.getField(0) + "-" + value.getField(1))
               .window(TumblingEventTimeWindows.of(Time.of(twSize, TimeUnit.MINUTES)))
-              .aggregate(new MeshNodeAggregation())
+              .process(new ProcessNodeWindow())
+              .name("Time window (" + twSize + " min.)")
               .addSink(JdbcSink.sink(
                     cfg.getOption("sink.jdbc.sql"),
                     (stmt, row) -> {
                         stmt.setLong(1, row.getFieldAs(0));
                         stmt.setLong(2, row.getFieldAs(1));
                         stmt.setInt(3, row.getFieldAs(2));
+                        stmt.setTimestamp(4, new Timestamp(row.getFieldAs(3)));
+                        stmt.setTimestamp(5, new Timestamp(row.getFieldAs(4)));
                     },
                     JdbcExecutionOptions.builder()
                           .withBatchSize(100)
                           .withBatchIntervalMs(200)
                           .withMaxRetries(5)
                           .build(),
-                    new JdbcConnectionOptions.JdbcConnectionOptionsBuilder()
+                    new JdbcConnectionOptionsBuilder()
                           .withUrl(cfg.getOption("sink.jdbc.url"))
                           .withDriverName(cfg.getOption("sink.jdbc.driver"))
                           .withUsername(cfg.getOption("sink.jdbc.user.name"))
