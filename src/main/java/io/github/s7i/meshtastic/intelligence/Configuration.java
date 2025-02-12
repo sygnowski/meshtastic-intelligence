@@ -5,6 +5,9 @@ import static java.util.Objects.requireNonNull;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Optional;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.SneakyThrows;
@@ -58,21 +61,21 @@ public class Configuration {
               .orElseThrow(() -> new RuntimeException("missing config option:" + tag));
     }
 
-    public String getOption(String optionName) {
+    public Optional<String> findOption(String optionName) {
         return getOptions()
               .stream()
               .filter(o -> o.getName().equals(optionName))
               .map(Option::getValue)
-              .findFirst()
+              .findFirst();
+    }
+
+    public String getOption(String optionName) {
+        return findOption(optionName)
               .orElseThrow(() -> new RuntimeException("missing config option:" + optionName));
     }
 
     public String getOption(String optionName, String defaultValue) {
-        return getOptions()
-              .stream()
-              .filter(o -> o.getName().equals(optionName))
-              .map(Option::getValue)
-              .findFirst()
+        return findOption(optionName)
               .orElse(defaultValue);
     }
 

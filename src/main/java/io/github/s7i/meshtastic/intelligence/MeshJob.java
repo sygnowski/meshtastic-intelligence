@@ -6,9 +6,14 @@ import com.geeksville.mesh.MeshProtos.MeshPacket;
 import io.github.s7i.meshtastic.intelligence.Configuration.Topic;
 import io.github.s7i.meshtastic.intelligence.io.Packet;
 import io.github.s7i.meshtastic.intelligence.io.PacketDeserializer;
+import java.io.BufferedReader;
 import java.io.StringReader;
 import java.sql.Timestamp;
 import java.time.Duration;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 import lombok.SneakyThrows;
@@ -21,6 +26,7 @@ import org.apache.flink.connector.jdbc.JdbcExecutionOptions;
 import org.apache.flink.connector.jdbc.JdbcSink;
 import org.apache.flink.connector.jdbc.catalog.JdbcCatalog;
 import org.apache.flink.connector.kafka.source.KafkaSource;
+import org.apache.flink.connector.kafka.source.enumerator.initializer.OffsetsInitializer;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.windowing.assigners.TumblingEventTimeWindows;
 import org.apache.flink.streaming.api.windowing.time.Time;
@@ -30,6 +36,7 @@ import org.apache.flink.types.Row;
 @Slf4j
 public class MeshJob extends JobStub {
 
+    public static final String UUID_KAFKA_SOURCE = "kafka-source";
     int watermarkDuration = 5000;
     final Topic source;
     final StreamTableEnvironment tableEnv;
@@ -45,7 +52,9 @@ public class MeshJob extends JobStub {
     @SneakyThrows
     Properties kafkaProperties() {
         var props = new Properties();
-        props.load(new StringReader(source.getKafka()));
+        try (var br = new BufferedReader(new StringReader(source.getKafka()))) {
+            props.load(br);
+        }
         return props;
     }
 
@@ -78,21 +87,16 @@ public class MeshJob extends JobStub {
 
         int twSize = Integer.parseInt(cfg.getOption("window.size", "10"));
 
-        var kafka = KafkaSource.<Packet>builder()
-              .setProperties(kafkaProperties())
-              .setTopics(source.getName())
-              .setDeserializer(new PacketDeserializer())
-              .build();
-
-        var stream = env.fromSource(kafka,
+        var stream = env.fromSource(buildSource(),
                     WatermarkStrategy.
                           <Packet>forBoundedOutOfOrderness(Duration.ofMillis(watermarkDuration))
                           .withTimestampAssigner((element, recordTimestamp) -> element.timestamp()), "mesh packets")
+              .uid(UUID_KAFKA_SOURCE)
               .name("from kafka: " + source.getName())
               .disableChaining()
               .filter(packet -> FromRadio.parseFrom(packet.payload())
                     .getPayloadVariantCase() == PayloadVariantCase.PACKET)
-              .name("Packet Payload")
+              .name("Packet Payload Filter")
               .disableChaining()
               .map(packet -> {
                   var fromRadio = FromRadio.parseFrom(packet.payload());
@@ -133,14 +137,28 @@ public class MeshJob extends JobStub {
               ))
               .name("postgres")
               .disableChaining();
+    }
 
-//        var meshNodes = tableEnv.fromDataStream(stream, Schema.newBuilder()
-//              .column("from_node", DataTypes.INT())
-//              .column("to_node", DataTypes.INT())
-//              .build());
-//
-//        tableEnv.createTemporaryView("nodes_status", meshNodes);
-//
-//        stream.print();
+    private KafkaSource<Packet> buildSource() {
+        var kafka = KafkaSource.<Packet>builder()
+              .setProperties(kafkaProperties())
+              .setTopics(source.getName())
+              .setDeserializer(new PacketDeserializer());
+
+        cfg.findOption("source.from_timestamp").ifPresent(value -> {
+            kafka.setStartingOffsets(OffsetsInitializer.timestamp(parseTimestamp(value)));
+        });
+
+        cfg.findOption("source.to_timestamp").ifPresent(value -> {
+            kafka.setBounded(OffsetsInitializer.timestamp(parseTimestamp(value)));
+        });
+
+        return kafka.build();
+    }
+
+    private static long parseTimestamp(String value) {
+        return OffsetDateTime.parse(value)
+              .toInstant()
+              .toEpochMilli();
     }
 }
