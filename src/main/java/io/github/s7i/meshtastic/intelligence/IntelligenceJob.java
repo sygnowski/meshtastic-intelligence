@@ -8,6 +8,7 @@ import java.util.function.Supplier;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.java.utils.ParameterTool;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
+import org.apache.flink.util.FlinkRuntimeException;
 
 @Slf4j
 public class IntelligenceJob {
@@ -21,13 +22,13 @@ public class IntelligenceJob {
             var cfg = Configuration.from(params.get("mesh-cfg", "/app/mesh.yml"));
             env.getConfig().setGlobalJobParameters(params);
 
-            var jobKind = params.get("job-kind", "default");
+            var jobKind = cfg.getOption("job.kind", "default");
             Map.<String, Supplier<JobStub>>of(
-                  "default",
-                  () -> new MeshJob(params, env, cfg)
-            ).entrySet()
+                        "default", () -> new MeshJob(params, env, cfg),
+                        "node-info", () -> new MeshNodeInfoJob(params, env, cfg)
+                  ).entrySet()
                   .stream()
-                  .filter( e -> e.getKey().equals(jobKind))
+                  .filter(e -> e.getKey().equals(jobKind))
                   .map(Entry::getValue)
                   .map(Supplier::get)
                   .findFirst()
@@ -36,7 +37,8 @@ public class IntelligenceJob {
 
             env.execute(cfg.getName());
         } catch (Exception e) {
-            log.error("oops", e);
+            log.error("failed to start job", e);
+            throw new FlinkRuntimeException(e.getMessage());
         }
     }
 }
