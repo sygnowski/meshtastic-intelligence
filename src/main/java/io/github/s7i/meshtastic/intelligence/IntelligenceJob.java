@@ -25,7 +25,8 @@ public class IntelligenceJob {
             var jobKind = cfg.getOption("job.kind", "default");
             Map.<String, Supplier<JobStub>>of(
                         "default", () -> new MeshJob(params, env, cfg),
-                        "node-info", () -> new MeshNodeInfoJob(params, env, cfg)
+                        "node-info", () -> new MeshNodeInfoJob(params, env, cfg),
+                        "text-app", () -> new TextMessageJob(params, env, cfg)
                   ).entrySet()
                   .stream()
                   .filter(e -> e.getKey().equals(jobKind))
@@ -35,7 +36,10 @@ public class IntelligenceJob {
                   .orElseThrow(() -> new RuntimeException("unknown job kind" + jobKind))
                   .build();
 
-            env.execute(cfg.getName());
+            if (Boolean.parseBoolean(cfg.getOption("omit.execute", ""))) {
+                return;
+            }
+            env.execute(cfg.getName() + " [kind:" + jobKind + "]");
         } catch (Exception e) {
             log.error("failed to start job", e);
             throw new FlinkRuntimeException(e.getMessage());

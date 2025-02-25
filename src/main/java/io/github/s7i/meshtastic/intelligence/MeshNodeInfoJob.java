@@ -23,7 +23,11 @@ public class MeshNodeInfoJob extends JobStub {
           Configuration cfg) {
         super(params, env, cfg);
 
-        tableEnv = TableEnvironment.create(EnvironmentSettings.inStreamingMode());
+        tableEnv = TableEnvironment.create(EnvironmentSettings.newInstance()
+              .withBuiltInCatalogName("mesh-catalog")
+              .withBuiltInDatabaseName("mesh-db")
+              .inStreamingMode()
+              .build());
     }
 
     void initCatalog() {
@@ -62,8 +66,8 @@ public class MeshNodeInfoJob extends JobStub {
               .name("Node Info Filter")
               .map(new MapNodeInfo())
               .returns(Types.ROW_NAMED(new String[]{
-                    "node_id", "user_id", "user_name", "user_long_name", "last_heard", "hops_away", "snr"
-              }, Types.LONG, Types.STRING, Types.STRING, Types.STRING, Types.LOCAL_DATE_TIME, Types.INT, Types.FLOAT))
+                    "node_id", "user_id", "user_name", "user_long_name", "user_role", "last_heard", "hops_away", "snr"
+              }, Types.LONG, Types.STRING, Types.STRING, Types.STRING, Types.STRING, Types.LOCAL_DATE_TIME, Types.INT, Types.FLOAT))
               .name("Map Node Info")
               .disableChaining();
 
@@ -72,6 +76,7 @@ public class MeshNodeInfoJob extends JobStub {
               .column("user_id", DataTypes.STRING())
               .column("user_name", DataTypes.STRING())
               .column("user_long_name", DataTypes.STRING())
+              .column("user_role", DataTypes.STRING())
               .column("last_heard", DataTypes.TIMESTAMP())
               .column("hops_away", DataTypes.INT())
               .column("snr", DataTypes.FLOAT())
@@ -82,22 +87,10 @@ public class MeshNodeInfoJob extends JobStub {
         var resultStream = streamTableEnv.toChangelogStream(tab);
         resultStream.print();
 
-
-        cfg.findOption("sql.create.nodeinfo.table").ifPresent( sql -> {
+        cfg.findOption("sql.create.nodeinfo.table").ifPresent(sql -> {
             streamTableEnv.createTemporaryView("NodeInfo", tab);
             streamTableEnv.executeSql(sql);
             streamTableEnv.executeSql("INSERT INTO node_info_sink SELECT * FROM NodeInfo");
         });
-
-//        streamTableEnv.createTemporaryView("NodeInfo", nodeInfoStream, Schema.newBuilder()
-//              .column("node_id", DataTypes.BIGINT())
-//              .column("user_id", DataTypes.STRING())
-//              .column("user_name", DataTypes.STRING())
-//              .column("user_long_name", DataTypes.STRING())
-//              .column("last_heard", DataTypes.TIMESTAMP())
-//              .column("hops_away", DataTypes.INT())
-//              .column("snr", DataTypes.FLOAT())
-//              .build());
-
     }
 }

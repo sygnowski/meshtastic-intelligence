@@ -40,6 +40,7 @@ public class MapNodeInfo extends RichMapFunction<Packet, Row> {
                   userId,
                   user.getShortName(),
                   user.getLongName(),
+                  user.getRole().toString(),
                   lastHeard,
                   nodeInfo.getHopsAway(),
                   nodeInfo.getSnr()
