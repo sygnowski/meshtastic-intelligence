@@ -23,10 +23,14 @@ public class PacketSerializer extends Serializer<Packet> {
         packet.timestamp = input.readLong(true);
 
         int len = input.readInt(true);
-        byte[] paylod = new byte[len];
-        input.read(paylod);
+        byte[] pyloadBuffer = new byte[len];
+        int readBytes = input.read(pyloadBuffer);
 
-        packet.payload = paylod;
+        if (readBytes != len) {
+            log.warn("mismatch in declared length: {} <> {}", len, readBytes);
+        }
+
+        packet.payload = pyloadBuffer;
         return packet;
     }
 }

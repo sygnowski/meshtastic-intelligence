@@ -3,7 +3,7 @@ name: Mesh
 topics:
   - name: "meshtastic-from-radio"
     tag: source
-    kafka: >-
+    kafka: |
       bootstrap.servers=kafka123
       client.id=1231
 options:

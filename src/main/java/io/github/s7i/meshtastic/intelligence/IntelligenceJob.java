@@ -4,7 +4,6 @@ import io.github.s7i.meshtastic.intelligence.io.Packet;
 import io.github.s7i.meshtastic.intelligence.io.PacketSerializer;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.function.Supplier;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.java.utils.ParameterTool;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
@@ -13,9 +12,17 @@ import org.apache.flink.util.FlinkRuntimeException;
 @Slf4j
 public class IntelligenceJob {
 
+    interface JobCreator {
+
+        JobStub create(ParameterTool params, StreamExecutionEnvironment env, Configuration cfg);
+    }
+
     public static void main(String[] args) {
         try {
             var params = ParameterTool.fromArgs(args);
+
+            log.info("command line params: {}", params.toMap());
+
             var env = StreamExecutionEnvironment.getExecutionEnvironment();
             env.registerTypeWithKryoSerializer(Packet.class, PacketSerializer.class);
 
@@ -23,23 +30,18 @@ public class IntelligenceJob {
             env.getConfig().setGlobalJobParameters(params);
 
             var jobKind = cfg.getOption("job.kind", "default");
-            Map.<String, Supplier<JobStub>>of(
-                        "default", () -> new MeshJob(params, env, cfg),
-                        "node-info", () -> new MeshNodeInfoJob(params, env, cfg),
-                        "text-app", () -> new TextMessageJob(params, env, cfg)
+            Map.<String, JobCreator>of(
+                        "default", MeshJob::new,
+                        "node-info", MeshNodeInfoJob::new,
+                        "text-app", TextMessageJob::new
                   ).entrySet()
                   .stream()
                   .filter(e -> e.getKey().equals(jobKind))
                   .map(Entry::getValue)
-                  .map(Supplier::get)
+                  .map(jobCreator -> jobCreator.create(params, env, cfg))
                   .findFirst()
                   .orElseThrow(() -> new RuntimeException("unknown job kind" + jobKind))
                   .build();
-
-            if (Boolean.parseBoolean(cfg.getOption("omit.execute", ""))) {
-                return;
-            }
-            env.execute(cfg.getName() + " [kind:" + jobKind + "]");
         } catch (Exception e) {
             log.error("failed to start job", e);
             throw new FlinkRuntimeException(e.getMessage());

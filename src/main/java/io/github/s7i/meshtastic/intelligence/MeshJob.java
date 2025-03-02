@@ -19,6 +19,7 @@ import org.apache.flink.types.Row;
 
 @Slf4j
 public class MeshJob extends JobStub {
+
     final StreamTableEnvironment tableEnv;
 
     public MeshJob(ParameterTool params, StreamExecutionEnvironment env, Configuration cfg) {
@@ -75,7 +76,11 @@ public class MeshJob extends JobStub {
               ))
               .name("postgres")
               .disableChaining();
+
+        try {
+            env.executeAsync(jobName());
+        } catch (Exception e) {
+            log.error("job execution");
+        }
     }
-
-
 }

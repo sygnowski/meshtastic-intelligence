@@ -15,6 +15,7 @@ import org.apache.flink.connector.kafka.source.KafkaSource;
 import org.apache.flink.connector.kafka.source.enumerator.initializer.OffsetsInitializer;
 import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
+import org.apache.kafka.common.protocol.types.Field.Str;
 
 @RequiredArgsConstructor
 public abstract class JobStub {
@@ -28,6 +29,14 @@ public abstract class JobStub {
 
     public abstract void build();
 
+    public String jobName() {
+        var sb = new StringBuilder(cfg.getName());
+        cfg.findOption("job.kind").ifPresent(kind -> {
+            sb.append(" [kind:").append(kind).append("]");
+        });
+        sb.append(" | ").append(new GitProps());
+        return sb.toString();
+    }
 
     public SingleOutputStreamOperator<Packet> fromKafkaSource() {
         var source = cfg.getTopic("source");
