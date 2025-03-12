@@ -1,9 +1,12 @@
 package io.github.s7i.meshtastic.intelligence;
 
+import io.github.s7i.meshtastic.intelligence.Configuration.Option;
 import io.github.s7i.meshtastic.intelligence.io.Packet;
 import io.github.s7i.meshtastic.intelligence.io.PacketSerializer;
 import java.util.Map;
-import java.util.Map.Entry;
+import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.java.utils.ParameterTool;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
@@ -27,17 +30,20 @@ public class IntelligenceJob {
             env.registerTypeWithKryoSerializer(Packet.class, PacketSerializer.class);
 
             var cfg = Configuration.from(params.get("mesh-cfg", "/app/mesh.yml"));
-            env.getConfig().setGlobalJobParameters(params);
+            var map = cfg.getOptions().stream()
+                  .filter(option -> option.getName() != null && option.getValue() != null)
+                  .collect(Collectors.toMap(Option::getName, Option::getValue));
+            map.putAll(params.toMap());
+            env.getConfig().setGlobalJobParameters(ParameterTool.fromMap(map));
 
             var jobKind = cfg.getOption("job.kind", "default");
-            Map.<String, JobCreator>of(
+            Stream.of(jobKind)
+                  .map(kind -> Optional.ofNullable(Map.<String, JobCreator>of(
                         "default", MeshJob::new,
                         "node-info", MeshNodeInfoJob::new,
                         "text-app", TextMessageJob::new
-                  ).entrySet()
-                  .stream()
-                  .filter(e -> e.getKey().equals(jobKind))
-                  .map(Entry::getValue)
+                  ).get(kind)))
+                  .flatMap(Optional::stream)
                   .map(jobCreator -> jobCreator.create(params, env, cfg))
                   .findFirst()
                   .orElseThrow(() -> new RuntimeException("unknown job kind" + jobKind))
