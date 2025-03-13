@@ -2,6 +2,7 @@ package io.github.s7i.meshtastic.intelligence;
 
 import com.geeksville.mesh.MeshProtos.FromRadio;
 import com.geeksville.mesh.MeshProtos.MeshPacket;
+import io.github.s7i.meshtastic.intelligence.Model.TextMessage;
 import io.github.s7i.meshtastic.intelligence.io.Packet;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.common.accumulators.ListAccumulator;
@@ -41,13 +42,17 @@ public class TextAppProcessor extends KeyedProcessFunction<Long, Packet, Row> im
             var plainText = new String(dec.getPayload().toByteArray(), messageCharset);
             var channel = packet.getChannel();
 
-            out.collect(Row.of(
-                  fromEpoch(packet.getRxTime()),
-                  channel,
-                  ctx.getCurrentKey(),
-                  asUnsigned(packet.getTo()),
-                  plainText
-            ));
+            var row = TextMessage.builder()
+                  .text(plainText)
+                  .channel(channel)
+                  .time(fromEpoch(packet.getRxTime()))
+                  .fromNode(ctx.getCurrentKey())
+                  .toNode(asUnsigned(packet.getTo()))
+                  .jobId(getRuntimeContext().getJobId().toHexString())
+                  .build()
+                  .toRow();
+
+            out.collect(row);
 
             accuMessages.add(String.format("%s form: %d, chan: %s, text: %s",
                   fromEpoch(packet.getRxTime()), ctx.getCurrentKey(), channel, plainText));
