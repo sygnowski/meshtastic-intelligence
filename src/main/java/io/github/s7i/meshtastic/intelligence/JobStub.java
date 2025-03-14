@@ -12,6 +12,9 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.common.eventtime.WatermarkStrategy;
 import org.apache.flink.api.java.utils.ParameterTool;
+import org.apache.flink.connector.jdbc.JdbcConnectionOptions;
+import org.apache.flink.connector.jdbc.JdbcConnectionOptions.JdbcConnectionOptionsBuilder;
+import org.apache.flink.connector.jdbc.JdbcExecutionOptions;
 import org.apache.flink.connector.kafka.source.KafkaSource;
 import org.apache.flink.connector.kafka.source.enumerator.initializer.OffsetsInitializer;
 import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
@@ -93,5 +96,22 @@ public abstract class JobStub {
         });
 
         return props;
+    }
+
+    protected JdbcExecutionOptions getJdbcExecutionOptions() {
+        return JdbcExecutionOptions.builder()
+              .withBatchSize(100)
+              .withBatchIntervalMs(200)
+              .withMaxRetries(5)
+              .build();
+    }
+
+    protected JdbcConnectionOptions getJdbcConnectionOptions() {
+        return new JdbcConnectionOptionsBuilder()
+              .withUrl(cfg.getOption("sink.jdbc.url"))
+              .withDriverName(cfg.getOption("sink.jdbc.driver"))
+              .withUsername(cfg.getOption("sink.jdbc.user.name"))
+              .withPassword(cfg.getOption("sink.jdbc.user.password"))
+              .build();
     }
 }

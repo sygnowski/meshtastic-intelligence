@@ -67,17 +67,8 @@ public class MeshJob extends JobStub {
                         stmt.setString(6, row.getFieldAs("kind"));
                         stmt.setString(7, row.getFieldAs("jobId"));
                     },
-                    JdbcExecutionOptions.builder()
-                          .withBatchSize(100)
-                          .withBatchIntervalMs(200)
-                          .withMaxRetries(5)
-                          .build(),
-                    new JdbcConnectionOptionsBuilder()
-                          .withUrl(cfg.getOption("sink.jdbc.url"))
-                          .withDriverName(cfg.getOption("sink.jdbc.driver"))
-                          .withUsername(cfg.getOption("sink.jdbc.user.name"))
-                          .withPassword(cfg.getOption("sink.jdbc.user.password"))
-                          .build()
+                    getJdbcExecutionOptions(),
+                    getJdbcConnectionOptions()
               ))
               .name("postgres")
               .disableChaining();
