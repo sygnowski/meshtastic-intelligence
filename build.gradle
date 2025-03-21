@@ -45,10 +45,10 @@ repositories {
             name = "Nexus"
             url = uri("http://dwarf.syg:5815/repository/maven-releases/")
             allowInsecureProtocol = true
-            credentials {
-                username = System.getenv("USERNAME")
-                password = System.getenv("PASSWD")
-            }
+//            credentials {
+//                username = System.getenv("USERNAME")
+//                password = System.getenv("PASSWD")
+//            }
         }
     }
 }
