@@ -39,7 +39,7 @@ public abstract class JobStub {
         cfg.findOption(JOB_KIND).ifPresent(kind -> {
             sb.append(" [kind:").append(kind).append("]");
         });
-        sb.append(" | ").append(new GitProps());
+        sb.append(" | ").append(GitProps.get());
         return sb.toString();
     }
 
