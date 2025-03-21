@@ -42,10 +42,12 @@ repositories {
     }
     repositories {
         maven {
-            url = uri("https://maven.pkg.github.com/nefro85/devbox")
+            name = "Nexus"
+            url = uri("http://dwarf.syg:5815/repository/maven-releases/")
+            allowInsecureProtocol = true
             credentials {
-                username = project.findProperty("gpr.user") ?: System.getenv("GH_USERNAME")
-                password = project.findProperty("gpr.key") ?: System.getenv("GH_TOKEN")
+                username = System.getenv("USERNAME")
+                password = System.getenv("PASSWD")
             }
         }
     }
