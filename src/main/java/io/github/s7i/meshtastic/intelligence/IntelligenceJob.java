@@ -15,6 +15,12 @@ import org.apache.flink.util.FlinkRuntimeException;
 @Slf4j
 public class IntelligenceJob {
 
+    private static final Map<String, JobCreator> JOB_KIND = Map.of(
+          "default", MeshJob::new,
+          "node-info", MeshNodeInfoJob::new,
+          "text-app", TextMessageJob::new
+    );
+
     interface JobCreator {
 
         JobStub create(ParameterTool params, StreamExecutionEnvironment env, Configuration cfg);
@@ -38,11 +44,7 @@ public class IntelligenceJob {
 
             var jobKind = cfg.getOption("job.kind", "default");
             Stream.of(jobKind)
-                  .map(kind -> Optional.ofNullable(Map.<String, JobCreator>of(
-                        "default", MeshJob::new,
-                        "node-info", MeshNodeInfoJob::new,
-                        "text-app", TextMessageJob::new
-                  ).get(kind)))
+                  .map(kind -> Optional.ofNullable(JOB_KIND.get(kind)))
                   .flatMap(Optional::stream)
                   .map(jobCreator -> jobCreator.create(params, env, cfg))
                   .findFirst()
