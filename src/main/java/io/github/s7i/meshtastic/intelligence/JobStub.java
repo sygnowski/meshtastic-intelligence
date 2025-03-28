@@ -19,6 +19,7 @@ import org.apache.flink.connector.kafka.source.KafkaSource;
 import org.apache.flink.connector.kafka.source.enumerator.initializer.OffsetsInitializer;
 import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
+import org.apache.kafka.clients.consumer.ConsumerConfig;
 
 @RequiredArgsConstructor
 @Slf4j
@@ -26,11 +27,13 @@ public abstract class JobStub {
 
     public static final String UUID_KAFKA_SOURCE = "kafka-source";
     public static final String JOB_KIND = "job.kind";
-    public static final String GROUP_ID = "group.id";
+    public static final String GROUP_ID = ConsumerConfig.GROUP_ID_CONFIG;
 
     protected final ParameterTool params;
     protected final StreamExecutionEnvironment env;
     protected final Configuration cfg;
+
+    private String kafkaServes = "";
 
     public abstract void build();
 
@@ -52,12 +55,15 @@ public abstract class JobStub {
                           <Packet>forBoundedOutOfOrderness(Duration.ofMillis(watermarkDuration))
                           .withTimestampAssigner((element, recordTimestamp) -> element.timestamp()), "mesh packets")
               .uid(UUID_KAFKA_SOURCE)
-              .name("from kafka: " + source.getName());
+              .name("from kafka topic: " + source.getName() + " @ " + kafkaServes);
     }
 
     private KafkaSource<Packet> buildSource(Configuration.Topic source) {
+        var props = kafkaProperties(source);
+        kafkaServes = props.getProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG);
+
         var kafka = KafkaSource.<Packet>builder()
-              .setProperties(kafkaProperties(source))
+              .setProperties(props)
               .setTopics(source.getName())
               .setDeserializer(new PacketDeserializer());
 

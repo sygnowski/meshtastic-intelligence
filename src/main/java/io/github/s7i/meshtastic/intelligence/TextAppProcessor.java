@@ -10,6 +10,7 @@ import org.apache.flink.configuration.Configuration;
 import org.apache.flink.streaming.api.functions.KeyedProcessFunction;
 import org.apache.flink.types.Row;
 import org.apache.flink.util.Collector;
+import org.apache.flink.util.OutputTag;
 
 @Slf4j
 public class TextAppProcessor extends KeyedProcessFunction<Long, Packet, Row> implements Helper {
@@ -17,6 +18,10 @@ public class TextAppProcessor extends KeyedProcessFunction<Long, Packet, Row> im
     private transient String messageCharset;
 
     private ListAccumulator<String> accuMessages = new ListAccumulator<>();
+
+    public static final OutputTag<Row> NOTIFICATION = new OutputTag<Row>("MTX_NT") {
+
+    };
 
     @Override
     public void open(Configuration parameters) throws Exception {
@@ -53,6 +58,8 @@ public class TextAppProcessor extends KeyedProcessFunction<Long, Packet, Row> im
                   .toRow();
 
             out.collect(row);
+
+            ctx.output(NOTIFICATION, row);
 
             accuMessages.add(String.format("%s form: %d, chan: %s, text: %s",
                   fromEpoch(packet.getRxTime()), ctx.getCurrentKey(), channel, plainText));

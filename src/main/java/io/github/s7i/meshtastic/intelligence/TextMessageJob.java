@@ -25,7 +25,7 @@ public class TextMessageJob extends JobStub {
     @Override
     public void build() {
 
-        fromKafkaSource()
+        var textRowsStream = fromKafkaSource()
               .filter(p -> {
                   var fromRadio = FromRadio.parseFrom(p.payload());
                   return fromRadio.getPayloadVariantCase() == PayloadVariantCase.PACKET &&
@@ -34,8 +34,14 @@ public class TextMessageJob extends JobStub {
               .keyBy(p -> FromRadio.parseFrom(p.payload()).getPacket().getFrom() & 0xffffffffL)
               .process(new TextAppProcessor())
               .uid("text-app")
-              .name("Text App Processor")
-              .addSink(JdbcSink.sink(
+              .name("Text App Processor");
+
+        textRowsStream.getSideOutput(TextAppProcessor.NOTIFICATION)
+              .addSink(new TextMessageNotification())
+              .disableChaining()
+              .name("Http Notifications");
+
+        textRowsStream.addSink(JdbcSink.sink(
                     cfg.getOption("text.sink.jdbc.sql"),
                     (stmt, row) -> {
                         LocalDateTime ldt = row.getFieldAs(TextMessage.TIME);
