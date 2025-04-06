@@ -89,6 +89,7 @@ dependencies {
             "io.grpc:grpc-stub:$grcpVersion",
             "io.grpc:grpc-protobuf:$grcpVersion",
 //            "org.postgresql:postgresql:42.7.5",
+            "org.apache.commons:commons-text:1.10.0",
             "org.apache.flink:flink-connector-jdbc:${flinkJdbcVer}"
 
     runtimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:${log4jVersion}"

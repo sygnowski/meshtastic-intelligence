@@ -1,10 +1,8 @@
 package io.github.s7i.meshtastic.intelligence;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import java.io.BufferedReader;
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 class ConfigurationTest {
 
@@ -23,6 +21,22 @@ class ConfigurationTest {
         assertTrue(() -> k.contains("client.id=1231"));
 
         assertTrue(() -> "meshtastic-from-radio".equals(t.getName()));
+
+    }
+
+    @Test
+    void config_with_resolved_value() {
+        Configuration c = Configuration.from("src/test/resources/conf.yaml");
+
+        assertEquals("my-password-is-secret-password", c.getOption("value-with-password"));
+
+    }
+
+    @Test
+    void config_with_resolved_value_throw() {
+        Configuration c = Configuration.from("src/test/resources/conf.yaml");
+
+        assertThrows(IllegalStateException.class, () -> c.getOption("value-with-missing-expression"));
 
     }
 }

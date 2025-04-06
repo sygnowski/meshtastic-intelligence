@@ -6,20 +6,34 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
-import java.util.function.Consumer;
-import java.util.function.Supplier;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.text.StringSubstitutor;
+import org.apache.commons.text.lookup.StringLookup;
 import org.yaml.snakeyaml.LoaderOptions;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.constructor.Constructor;
 
 @Slf4j
-@NoArgsConstructor
 @Data
 public class Configuration {
+
+    private class Resolver implements StringLookup {
+        private final StringSubstitutor sysSubstitutor = StringSubstitutor.createInterpolator().setEnableSubstitutionInVariables(true);
+        private final StringSubstitutor substitutor = new StringSubstitutor(this).setEnableSubstitutionInVariables(true);
+
+
+        @Override
+        public String lookup(String key) {
+            return Configuration.this.findOption(key)
+                    .orElseThrow(() -> new IllegalStateException("can't resolve: " + key));
+        }
+        public String resolve(String input) {
+            return sysSubstitutor.replace(substitutor.replace(input));
+        }
+    }
 
     @SneakyThrows
     public static Configuration from(String path) {
@@ -49,9 +63,14 @@ public class Configuration {
         private String value;
     }
 
+    public Configuration() {
+
+    }
+
     private String name;
     private List<Topic> topics;
     private List<Option> options;
+    private final Resolver resolver = new Resolver();
 
     public Topic getTopic(String tag) {
         return getTopics()
@@ -66,6 +85,7 @@ public class Configuration {
               .stream()
               .filter(o -> o.getName().equals(optionName))
               .map(Option::getValue)
+              .map(resolver::resolve)
               .findFirst();
     }
 

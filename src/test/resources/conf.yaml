@@ -16,7 +16,11 @@ options:
   - name: user.name
     value:
   - name: user.password
-    value:
+    value: secret-password
+  - name: value-with-password
+    value: my-password-is-${user.password}
+  - name: value-with-missing-expression
+    value: my-password-is-${xxxd1}
   - name: database.name
     value:
   - name: sql.create.mesh.table
