@@ -6,14 +6,26 @@ import io.github.s7i.meshtastic.intelligence.Model.TextMessage;
 import io.github.s7i.meshtastic.intelligence.io.Packet;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.common.accumulators.ListAccumulator;
+import org.apache.flink.api.common.state.MapStateDescriptor;
+import org.apache.flink.api.common.typeinfo.BasicTypeInfo;
+import org.apache.flink.api.common.typeinfo.TypeHint;
+import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.configuration.Configuration;
-import org.apache.flink.streaming.api.functions.KeyedProcessFunction;
+import org.apache.flink.streaming.api.functions.co.KeyedBroadcastProcessFunction;
 import org.apache.flink.types.Row;
 import org.apache.flink.util.Collector;
 import org.apache.flink.util.OutputTag;
 
 @Slf4j
-public class TextAppProcessor extends KeyedProcessFunction<Long, Packet, Row> implements Helper {
+public class TextAppProcessor extends KeyedBroadcastProcessFunction<Long, Packet, Row, Row> implements Helper {
+
+
+    public static final MapStateDescriptor<Long, Row> NODES_BROADCAST = new MapStateDescriptor<>(
+          "NodesBroadcast",
+          BasicTypeInfo.LONG_TYPE_INFO,
+          TypeInformation.of(new TypeHint<Row>() {
+          }));
+
 
     private transient String messageCharset;
 
@@ -39,7 +51,7 @@ public class TextAppProcessor extends KeyedProcessFunction<Long, Packet, Row> im
     }
 
     @Override
-    public void processElement(Packet value, KeyedProcessFunction<Long, Packet, Row>.Context ctx, Collector<Row> out) throws Exception {
+    public void processElement(Packet value, KeyedBroadcastProcessFunction<Long, Packet, Row, Row>.ReadOnlyContext ctx, Collector<Row> out) throws Exception {
         MeshPacket packet = FromRadio.parseFrom(value.payload()).getPacket();
         var dec = packet.getDecoded();
 
@@ -67,5 +79,11 @@ public class TextAppProcessor extends KeyedProcessFunction<Long, Packet, Row> im
         } catch (Exception e) {
             log.warn("can't read message from: {}", packet);
         }
+    }
+
+
+    @Override
+    public void processBroadcastElement(Row value, KeyedBroadcastProcessFunction<Long, Packet, Row, Row>.Context ctx, Collector<Row> out) throws Exception {
+        ctx.getBroadcastState(NODES_BROADCAST).put(value.getFieldAs(1), value);
     }
 }

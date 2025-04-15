@@ -25,13 +25,14 @@ public class TextMessageJob extends JobStub {
     @Override
     public void build() {
 
-        var textRowsStream = fromKafkaSource()
-              .filter(p -> {
-                  var fromRadio = FromRadio.parseFrom(p.payload());
-                  return fromRadio.getPayloadVariantCase() == PayloadVariantCase.PACKET &&
-                        fromRadio.getPacket().getDecoded().getPortnum() == PortNum.TEXT_MESSAGE_APP;
-              })
-              .keyBy(p -> FromRadio.parseFrom(p.payload()).getPacket().getFrom() & 0xffffffffL)
+        var packetStream = fromKafkaSource()
+              .process(new NodeAndTextMessageProcessor());
+
+        var brdStream = packetStream.getSideOutput(NodeAndTextMessageProcessor.NODE_INFO_ROW)
+              .broadcast(TextAppProcessor.NODES_BROADCAST);
+
+        var textRowsStream = packetStream.keyBy(p -> FromRadio.parseFrom(p.payload()).getPacket().getFrom() & 0xffffffffL)
+              .connect(brdStream)
               .process(new TextAppProcessor())
               .uid("text-app")
               .name("Text App Processor");
