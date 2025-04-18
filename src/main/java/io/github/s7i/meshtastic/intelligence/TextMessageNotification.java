@@ -2,6 +2,7 @@ package io.github.s7i.meshtastic.intelligence;
 
 import static java.util.Objects.requireNonNull;
 
+import io.github.s7i.meshtastic.intelligence.Model.Notification;
 import io.github.s7i.meshtastic.intelligence.Model.TextMessage;
 import java.io.IOException;
 import java.net.URI;
@@ -22,7 +23,7 @@ import org.apache.flink.streaming.api.functions.sink.RichSinkFunction;
 import org.apache.flink.types.Row;
 
 @Slf4j
-public class TextMessageNotification extends RichSinkFunction<Row> {
+public class TextMessageNotification extends RichSinkFunction<Notification> {
 
 
     public static final String TEXT_HTTP_URI = "text.http.uri";
@@ -59,20 +60,11 @@ public class TextMessageNotification extends RichSinkFunction<Row> {
     }
 
     @Override
-    public void invoke(Row value, Context context) throws Exception {
+    public void invoke(Notification value, Context context) throws Exception {
         executor.submit(() -> {
-            var title = String.format("Message from node: (%s) on channel: (%s)",
-                  value.getField(TextMessage.FROM_NODE),
-                  value.getField(TextMessage.CHANNEL)
-            );
-            var message = String.format("Time: %s\nText: %s",
-                  value.getField(TextMessage.TIME),
-                  value.getField(TextMessage.TEXT)
-            );
-
             var jsonText = objectMapper.writeValueAsString(Map.of(
-                  "title", title,
-                  "message", message,
+                  "title", value.getTitle(),
+                  "message", value.getMessage(),
                   "priority", 2)
             );
 
@@ -95,6 +87,6 @@ public class TextMessageNotification extends RichSinkFunction<Row> {
                 Thread.currentThread().interrupt();
             }
             return 0;
-        }).get(60, TimeUnit.SECONDS);
+        });
     }
 }

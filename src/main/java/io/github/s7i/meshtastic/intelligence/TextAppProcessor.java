@@ -2,8 +2,11 @@ package io.github.s7i.meshtastic.intelligence;
 
 import com.geeksville.mesh.MeshProtos.FromRadio;
 import com.geeksville.mesh.MeshProtos.MeshPacket;
+import io.github.s7i.meshtastic.intelligence.Model.NodeInfo;
+import io.github.s7i.meshtastic.intelligence.Model.Notification;
 import io.github.s7i.meshtastic.intelligence.Model.TextMessage;
 import io.github.s7i.meshtastic.intelligence.io.Packet;
+import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.common.accumulators.ListAccumulator;
 import org.apache.flink.api.common.state.MapStateDescriptor;
@@ -31,7 +34,7 @@ public class TextAppProcessor extends KeyedBroadcastProcessFunction<Long, Packet
 
     private ListAccumulator<String> accuMessages = new ListAccumulator<>();
 
-    public static final OutputTag<Row> NOTIFICATION = new OutputTag<Row>("MTX_NT") {
+    public static final OutputTag<Notification> NOTIFICATION = new OutputTag<Notification>("MTX_NT") {
 
     };
 
@@ -39,10 +42,11 @@ public class TextAppProcessor extends KeyedBroadcastProcessFunction<Long, Packet
     public void open(Configuration parameters) throws Exception {
         super.open(parameters);
 
-        messageCharset = getRuntimeContext()
+        Map<String, String> cfg = getRuntimeContext()
               .getExecutionConfig()
               .getGlobalJobParameters()
-              .toMap()
+              .toMap();
+        messageCharset = cfg
               .getOrDefault("message.charset", "utf-8");
 
         log.info("Using message charset: {}", messageCharset);
@@ -71,19 +75,32 @@ public class TextAppProcessor extends KeyedBroadcastProcessFunction<Long, Packet
 
             out.collect(row);
 
-            ctx.output(NOTIFICATION, row);
+            var bni = ctx.getBroadcastState(NODES_BROADCAST).get(ctx.getCurrentKey());
+            Notification nt = Notification.from(row);
+            if (bni != null) {
+                var name = bni.getField(NodeInfo.pos(NodeInfo.USER_NAME));
+                var longName = bni.getField(NodeInfo.pos(NodeInfo.USER_LONG_NAME));
 
-            accuMessages.add(String.format("%s form: %d, chan: %s, text: %s",
-                  fromEpoch(packet.getRxTime()), ctx.getCurrentKey(), channel, plainText));
+                nt.setTitle(Notification.title(name + "/" + longName, channel));
+            }
+
+            ctx.output(NOTIFICATION, nt);
+
+            accuMessages.add(nt.getTitle() + " | " + nt.getMessage());
+
+            var accuLo = accuMessages.getLocalValue();
+            if (accuLo.size() > 10) {
+                accuLo.remove(0);
+            }
 
         } catch (Exception e) {
-            log.warn("can't read message from: {}", packet);
+            log.warn("can't read message from: {}, why: ", packet, e);
         }
     }
 
 
     @Override
     public void processBroadcastElement(Row value, KeyedBroadcastProcessFunction<Long, Packet, Row, Row>.Context ctx, Collector<Row> out) throws Exception {
-        ctx.getBroadcastState(NODES_BROADCAST).put(value.getFieldAs(1), value);
+        ctx.getBroadcastState(NODES_BROADCAST).put(value.getFieldAs(0), value);
     }
 }

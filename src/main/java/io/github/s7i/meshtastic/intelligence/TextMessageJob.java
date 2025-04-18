@@ -26,7 +26,9 @@ public class TextMessageJob extends JobStub {
     public void build() {
 
         var packetStream = fromKafkaSource()
-              .process(new NodeAndTextMessageProcessor());
+              .process(new NodeAndTextMessageProcessor())
+              .name("NodeInfo And TextProcessor")
+              .disableChaining();
 
         var brdStream = packetStream.getSideOutput(NodeAndTextMessageProcessor.NODE_INFO_ROW)
               .broadcast(TextAppProcessor.NODES_BROADCAST);

@@ -2,6 +2,7 @@ package io.github.s7i.meshtastic.intelligence;
 
 import com.geeksville.mesh.MeshProtos.FromRadio;
 import com.geeksville.mesh.MeshProtos.FromRadio.PayloadVariantCase;
+import io.github.s7i.meshtastic.intelligence.Model.NodeInfo;
 import io.github.s7i.meshtastic.intelligence.nodeinfo.MapNodeInfo;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.common.typeinfo.Types;
@@ -65,9 +66,7 @@ public class MeshNodeInfoJob extends JobStub {
                     .getPayloadVariantCase() == PayloadVariantCase.NODE_INFO)
               .name("Node Info Filter")
               .map(new MapNodeInfo())
-              .returns(Types.ROW_NAMED(new String[]{
-                    "node_id", "user_id", "user_name", "user_long_name", "user_role", "last_heard", "hops_away", "snr"
-              }, Types.LONG, Types.STRING, Types.STRING, Types.STRING, Types.STRING, Types.LOCAL_DATE_TIME, Types.INT, Types.FLOAT))
+              .returns(Types.ROW_NAMED(NodeInfo.FIELDS, Types.LONG, Types.STRING, Types.STRING, Types.STRING, Types.STRING, Types.LOCAL_DATE_TIME, Types.INT, Types.FLOAT))
               .name("Map Node Info")
               .disableChaining();
 
