@@ -4,6 +4,7 @@ import com.geeksville.mesh.MeshProtos.FromRadio;
 import com.geeksville.mesh.MeshProtos.MeshPacket;
 import io.github.s7i.meshtastic.intelligence.Model.NodeInfo;
 import io.github.s7i.meshtastic.intelligence.Model.Notification;
+import io.github.s7i.meshtastic.intelligence.Model.SendMessage;
 import io.github.s7i.meshtastic.intelligence.Model.TextMessage;
 import io.github.s7i.meshtastic.intelligence.io.Packet;
 import java.util.Map;
@@ -38,6 +39,10 @@ public class TextAppProcessor extends KeyedBroadcastProcessFunction<Long, Packet
 
     };
 
+    public static final OutputTag<SendMessage> SEND_MESSAGE_OUTPUT_TAQ = new OutputTag<>("SEND_MESSAGE") {
+
+    };
+
     @Override
     public void open(Configuration parameters) throws Exception {
         super.open(parameters);
@@ -63,14 +68,29 @@ public class TextAppProcessor extends KeyedBroadcastProcessFunction<Long, Packet
             var plainText = new String(dec.getPayload().toByteArray(), messageCharset);
             var channel = packet.getChannel();
 
-            var row = TextMessage.builder()
+            var textMessage = TextMessage.builder()
                   .text(plainText)
                   .channel(channel)
                   .time(fromEpoch(packet.getRxTime()))
                   .fromNode(ctx.getCurrentKey())
                   .toNode(asUnsigned(packet.getTo()))
                   .jobId(getRuntimeContext().getJobId().toHexString())
-                  .build()
+                  .build();
+
+            if (plainText.trim().equalsIgnoreCase("ping")) {
+
+                var toNode = (int) (ctx.getCurrentKey() & 0xffffffffL);
+
+                var send = new SendMessage();
+                send.setChannel(channel);
+                send.setToNode(toNode);
+                send.setMesssage("pong");
+
+                ctx.output(SEND_MESSAGE_OUTPUT_TAQ, send);
+            }
+
+
+            var row = textMessage
                   .toRow();
 
             out.collect(row);

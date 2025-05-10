@@ -85,7 +85,7 @@ public abstract class JobStub {
     }
 
     @SneakyThrows
-    private Properties kafkaProperties(Configuration.Topic source) {
+    protected Properties kafkaProperties(Configuration.Topic source) {
         var props = new Properties();
         try (var br = new BufferedReader(new StringReader(source.getKafka()))) {
             props.load(br);

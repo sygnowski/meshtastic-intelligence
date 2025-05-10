@@ -1,18 +1,15 @@
 package io.github.s7i.meshtastic.intelligence;
 
 import com.geeksville.mesh.MeshProtos.FromRadio;
-import com.geeksville.mesh.MeshProtos.FromRadio.PayloadVariantCase;
-import com.geeksville.mesh.Portnums.PortNum;
+import io.github.s7i.meshtastic.intelligence.Model.SendMessage;
 import io.github.s7i.meshtastic.intelligence.Model.TextMessage;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.java.utils.ParameterTool;
-import org.apache.flink.connector.jdbc.JdbcConnectionOptions;
-import org.apache.flink.connector.jdbc.JdbcConnectionOptions.JdbcConnectionOptionsBuilder;
-import org.apache.flink.connector.jdbc.JdbcExecutionOptions;
 import org.apache.flink.connector.jdbc.JdbcSink;
+import org.apache.flink.connector.kafka.sink.KafkaSink;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 
 @Slf4j
@@ -43,6 +40,21 @@ public class TextMessageJob extends JobStub {
               .addSink(new TextMessageNotification())
               .disableChaining()
               .name("Http Notifications");
+
+        var sendCfg = cfg.getTopic("send-message");
+        var props = kafkaProperties(sendCfg);
+
+        textRowsStream.getSideOutput(TextAppProcessor.SEND_MESSAGE_OUTPUT_TAQ)
+              .sinkTo(KafkaSink.<SendMessage>builder()
+                    .setRecordSerializer(new SendMessageKafkaSerializer(
+                          sendCfg.getName(),
+                          cfg.getOption("send.message.node")
+                    ))
+                    .setKafkaProducerConfig(props)
+                    .build())
+              .disableChaining()
+              .uid("send-message-sink")
+              .name("Send Message Sink");
 
         textRowsStream.addSink(JdbcSink.sink(
                     cfg.getOption("text.sink.jdbc.sql"),

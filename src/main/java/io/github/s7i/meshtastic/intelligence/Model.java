@@ -133,4 +133,11 @@ public abstract class Model {
         }
     }
 
+    @Data
+    public static class SendMessage {
+        private int channel;
+        private int toNode;
+        private String messsage;
+    }
+
 }
