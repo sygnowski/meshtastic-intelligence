@@ -101,7 +101,6 @@ public class TextAppProcessor extends KeyedBroadcastProcessFunction<Long, Packet
             String ntMessage = textMessage.getText();
 
             ntMessage += "\n" + hops(packet) + hopsAway(stub);
-            ;
 
             var nt = new Notification()
                   .withTitle(fromNode, channel)
