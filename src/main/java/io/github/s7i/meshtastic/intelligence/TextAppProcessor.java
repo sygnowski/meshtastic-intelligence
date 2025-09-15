@@ -12,7 +12,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.common.accumulators.ListAccumulator;
 import org.apache.flink.api.common.state.MapStateDescriptor;
 import org.apache.flink.api.common.typeinfo.BasicTypeInfo;
-import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.streaming.api.functions.co.KeyedBroadcastProcessFunction;
@@ -27,21 +26,16 @@ public class TextAppProcessor extends KeyedBroadcastProcessFunction<Long, Packet
     public static final MapStateDescriptor<Long, Row> NODES_BROADCAST = new MapStateDescriptor<>(
           "NodesBroadcast",
           BasicTypeInfo.LONG_TYPE_INFO,
-          TypeInformation.of(new TypeHint<Row>() {
-          }));
+          TypeInformation.of(Row.class));
 
 
     private transient String messageCharset;
 
     private ListAccumulator<String> accuMessages = new ListAccumulator<>();
 
-    public static final OutputTag<Notification> NOTIFICATION = new OutputTag<Notification>("MTX_NT") {
+    public static final OutputTag<Notification> NOTIFICATION = new OutputTag<>("MTX_NT", TypeInformation.of(Notification.class));
 
-    };
-
-    public static final OutputTag<SendMessage> SEND_MESSAGE_OUTPUT_TAQ = new OutputTag<>("SEND_MESSAGE") {
-
-    };
+    public static final OutputTag<SendMessage> SEND_MESSAGE_OUTPUT_TAQ = new OutputTag<>("SEND_MESSAGE", TypeInformation.of(SendMessage.class));
 
     @Override
     public void open(Configuration parameters) throws Exception {
@@ -61,6 +55,7 @@ public class TextAppProcessor extends KeyedBroadcastProcessFunction<Long, Packet
 
     @Override
     public void processElement(Packet value, KeyedBroadcastProcessFunction<Long, Packet, Row, Row>.ReadOnlyContext ctx, Collector<Row> out) throws Exception {
+        final long fromNode = ctx.getCurrentKey();
         MeshPacket packet = FromRadio.parseFrom(value.payload()).getPacket();
         var dec = packet.getDecoded();
 
@@ -72,37 +67,34 @@ public class TextAppProcessor extends KeyedBroadcastProcessFunction<Long, Packet
                   .text(plainText)
                   .channel(channel)
                   .time(fromEpoch(packet.getRxTime()))
-                  .fromNode(ctx.getCurrentKey())
+                  .fromNode(fromNode)
                   .toNode(asUnsigned(packet.getTo()))
                   .jobId(getRuntimeContext().getJobId().toHexString())
                   .build();
 
             if (plainText.trim().equalsIgnoreCase("ping")) {
 
-                var toNode = (int) (ctx.getCurrentKey() & 0xffffffffL);
+                var toNode = (int) (fromNode & 0xffffffffL);
 
                 var send = new SendMessage();
                 send.setChannel(channel);
                 send.setToNode(toNode);
-                send.setMesssage("pong");
+                send.setMesssage("pong " + hops(packet));
 
                 ctx.output(SEND_MESSAGE_OUTPUT_TAQ, send);
             }
 
+            out.collect(textMessage.toRow());
 
-            var row = textMessage
-                  .toRow();
+            String ntMessage = textMessage.getText();
 
-            out.collect(row);
+            ntMessage += "\n" + hops(packet);
 
-            var bni = ctx.getBroadcastState(NODES_BROADCAST).get(ctx.getCurrentKey());
-            Notification nt = Notification.from(row);
-            if (bni != null) {
-                var name = bni.getField(NodeInfo.pos(NodeInfo.USER_NAME));
-                var longName = bni.getField(NodeInfo.pos(NodeInfo.USER_LONG_NAME));
+            var nt = new Notification()
+                  .withTitle(fromNode, channel)
+                  .withMessage(textMessage.getTime(), ntMessage);
 
-                nt.setTitle(Notification.title(name + "/" + longName, channel));
-            }
+            enrichNodeInfo(ctx, nt, channel);
 
             ctx.output(NOTIFICATION, nt);
 
@@ -115,6 +107,21 @@ public class TextAppProcessor extends KeyedBroadcastProcessFunction<Long, Packet
 
         } catch (Exception e) {
             log.warn("can't read message from: {}, why: ", packet, e);
+        }
+    }
+
+    private static String hops(MeshPacket packet) {
+        return "Hops (L: " + packet.getHopLimit() + "S: " + packet.getHopStart() + ")";
+    }
+
+    private static void enrichNodeInfo(KeyedBroadcastProcessFunction<Long, Packet, Row, Row>.ReadOnlyContext ctx, Notification nt, int channel)
+          throws Exception {
+        var bni = ctx.getBroadcastState(NODES_BROADCAST).get(ctx.getCurrentKey());
+        if (bni != null) {
+            var name = bni.getField(NodeInfo.pos(NodeInfo.USER_NAME));
+            var longName = bni.getField(NodeInfo.pos(NodeInfo.USER_LONG_NAME));
+
+            nt.withTitle(name + "/" + longName, channel);
         }
     }
 

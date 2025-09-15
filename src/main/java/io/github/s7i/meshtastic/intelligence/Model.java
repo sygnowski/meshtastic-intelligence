@@ -74,39 +74,18 @@ public abstract class Model {
     @NoArgsConstructor
     public static class Notification {
 
-        public static Notification from(Row value) {
-            var title = title(
-                  value.getField(TextMessage.FROM_NODE),
-                  value.getField(TextMessage.CHANNEL)
-            );
-            var message = message(
-                  value.getField(TextMessage.TIME),
-                  value.getField(TextMessage.TEXT)
-            );
-            Notification notification = new Notification();
-            notification.setTitle(title);
-            notification.setMessage(message);
-            return notification;
-        }
-
-        public static Notification from(String from, String chann, String time, String text) {
-
-            Notification notification = new Notification();
-            notification.setTitle(title(from, chann));
-            notification.setMessage(message(time, text));
-            return notification;
-        }
-
-        static String title(Object from, Object chann) {
-            return String.format("Message from node: (%s) on channel: (%s)",
+        public Notification withTitle(Object from, Object chann) {
+            title = String.format("Message from node: (%s) on channel: (%s)",
                   from, chann
             );
+            return this;
         }
 
-        static String message(Object time, Object text) {
-            return String.format("Time: %s\nText: %s",
+        public Notification withMessage(Object time, Object text) {
+            message = String.format("Time: %s\nText: %s",
                   time, text
             );
+            return this;
         }
 
 
@@ -135,6 +114,7 @@ public abstract class Model {
 
     @Data
     public static class SendMessage {
+
         private int channel;
         private int toNode;
         private String messsage;
