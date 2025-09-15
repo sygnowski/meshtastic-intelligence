@@ -1,6 +1,7 @@
 package io.github.s7i.meshtastic.intelligence;
 
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -93,23 +94,26 @@ public abstract class Model {
         private String message;
     }
 
-    public static class NodeInfo {
+    public enum NodeInfoDescriptor {
+        NODE_ID("node_id"),
+        USER_ID("user_id"),
+        USER_NAME("user_name"),
+        USER_LONG_NAME("user_long_name"),
+        USER_ROLE("user_role"),
+        LAST_HEARD("last_heard"),
+        HOPS_AWAY("hops_away"),
+        SNR("snr");
 
-        public static final String USER_NAME = "user_name";
-        public static final String USER_LONG_NAME = "user_long_name";
-        public static final String NODE_ID = "node_id";
-        public static final String[] FIELDS = {
-              NODE_ID, "user_id", USER_NAME, USER_LONG_NAME, "user_role", "last_heard", "hops_away", "snr"
-        };
 
-        public static int pos(String field) {
-            for (int i = 0; FIELDS.length > i; i++) {
-                if (field.equals(FIELDS[i])) {
-                    return i;
-                }
-            }
-            throw new IllegalStateException();
+        NodeInfoDescriptor(String name) {
+            NAME = name;
         }
+
+        public final String NAME;
+
+        public static final String[] FIELDS = Arrays.stream(values())
+              .map(d -> d.NAME)
+              .toArray(String[]::new);
     }
 
     @Data

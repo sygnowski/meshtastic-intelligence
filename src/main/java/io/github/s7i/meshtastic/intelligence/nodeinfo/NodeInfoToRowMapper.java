@@ -8,6 +8,12 @@ import org.apache.flink.types.Row;
 
 public interface NodeInfoToRowMapper {
 
+    /**
+     * @see io.github.s7i.meshtastic.intelligence.Model.NodeInfoDescriptor
+     *
+     * @param nodeInfo data
+     * @return mapped NodeInfo to Row
+     */
     default Row mapNodeInfo(NodeInfo nodeInfo) {
         User user = nodeInfo.getUser();
 
