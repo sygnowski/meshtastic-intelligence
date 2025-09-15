@@ -74,11 +74,9 @@ public class TextAppProcessor extends KeyedBroadcastProcessFunction<Long, Packet
 
             if (plainText.trim().equalsIgnoreCase("ping")) {
 
-                var toNode = (int) (fromNode & 0xffffffffL);
-
                 var send = new SendMessage();
                 send.setChannel(channel);
-                send.setToNode(toNode);
+                send.setToNode(packet.getFrom());
                 send.setMesssage("pong " + hops(packet));
 
                 ctx.output(SEND_MESSAGE_OUTPUT_TAQ, send);
@@ -111,7 +109,7 @@ public class TextAppProcessor extends KeyedBroadcastProcessFunction<Long, Packet
     }
 
     private static String hops(MeshPacket packet) {
-        return "Hops (L: " + packet.getHopLimit() + "S: " + packet.getHopStart() + ")";
+        return "Hops (L: " + packet.getHopLimit() + " S: " + packet.getHopStart() + ")";
     }
 
     private static void enrichNodeInfo(KeyedBroadcastProcessFunction<Long, Packet, Row, Row>.ReadOnlyContext ctx, Notification nt, int channel)
