@@ -6,6 +6,10 @@ import java.time.ZoneOffset;
 
 public interface Helper {
 
+    enum Singleton implements Helper {
+        INSTANCE;
+    }
+
 
     default LocalDateTime fromEpoch(long timestamp) {
         return Instant.ofEpochSecond(timestamp)

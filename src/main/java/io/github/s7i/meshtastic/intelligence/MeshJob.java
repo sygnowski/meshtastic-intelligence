@@ -3,19 +3,15 @@ package io.github.s7i.meshtastic.intelligence;
 import com.geeksville.mesh.MeshProtos.FromRadio;
 import com.geeksville.mesh.MeshProtos.FromRadio.PayloadVariantCase;
 import com.geeksville.mesh.MeshProtos.MeshPacket;
+import io.github.s7i.meshtastic.intelligence.Helper.Singleton;
 import java.sql.Timestamp;
 import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.flink.api.common.typeinfo.Types;
 import org.apache.flink.api.java.utils.ParameterTool;
-import org.apache.flink.connector.jdbc.JdbcConnectionOptions.JdbcConnectionOptionsBuilder;
-import org.apache.flink.connector.jdbc.JdbcExecutionOptions;
 import org.apache.flink.connector.jdbc.JdbcSink;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.windowing.assigners.TumblingEventTimeWindows;
 import org.apache.flink.streaming.api.windowing.time.Time;
-import org.apache.flink.table.api.bridge.java.StreamTableEnvironment;
-import org.apache.flink.types.Row;
 
 @Slf4j
 public class MeshJob extends JobStub {
@@ -34,6 +30,7 @@ public class MeshJob extends JobStub {
               .name("Packet Payload Filter")
               .disableChaining()
               .map(packet -> {
+                  var helper = Singleton.INSTANCE;
                   var fromRadio = FromRadio.parseFrom(packet.payload());
 
                   var payloadKind = "";
@@ -47,8 +44,8 @@ public class MeshJob extends JobStub {
 
                   MeshPacket pkt = fromRadio.getPacket();
 
-                  long pktFrom = pkt.getFrom() & 0xffffffffL;
-                  long pktTo = pkt.getTo() & 0xffffffffL;
+                  long pktFrom = helper.asUnsigned(pkt.getFrom());
+                  long pktTo = helper.asUnsigned(pkt.getTo());
 
                   return Model.asNodeContext(pktFrom, pktTo, payloadKind);
               }).name("map as Row with Package Kind")
