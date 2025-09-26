@@ -10,6 +10,7 @@ import io.github.s7i.meshtastic.intelligence.io.Packet;
 import java.util.Map;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.text.StringEscapeUtils;
 import org.apache.flink.api.common.accumulators.ListAccumulator;
 import org.apache.flink.api.common.state.MapStateDescriptor;
 import org.apache.flink.api.common.typeinfo.BasicTypeInfo;
@@ -71,7 +72,9 @@ public class TextAppProcessor extends KeyedBroadcastProcessFunction<Long, Packet
         var dec = packet.getDecoded();
 
         try {
-            var plainText = new String(dec.getPayload().toByteArray(), messageCharset);
+            var plainText = StringEscapeUtils.unescapeHtml4(
+                  new String(dec.getPayload().toByteArray(), messageCharset)
+            );
             var channel = packet.getChannel();
 
             var textMessage = TextMessage.builder()
