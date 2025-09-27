@@ -7,10 +7,10 @@ import io.github.s7i.meshtastic.intelligence.Model.Notification;
 import io.github.s7i.meshtastic.intelligence.Model.SendMessage;
 import io.github.s7i.meshtastic.intelligence.Model.TextMessage;
 import io.github.s7i.meshtastic.intelligence.io.Packet;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.text.StringEscapeUtils;
 import org.apache.flink.api.common.accumulators.ListAccumulator;
 import org.apache.flink.api.common.state.MapStateDescriptor;
 import org.apache.flink.api.common.typeinfo.BasicTypeInfo;
@@ -55,7 +55,7 @@ public class TextAppProcessor extends KeyedBroadcastProcessFunction<Long, Packet
               .getGlobalJobParameters()
               .toMap();
         messageCharset = cfg
-              .getOrDefault("message.charset", "utf-8");
+              .getOrDefault("message.charset", StandardCharsets.UTF_8.name());
 
         accuSize = Integer.parseInt(cfg.getOrDefault("message.accu.size", "10"));
 
@@ -72,10 +72,15 @@ public class TextAppProcessor extends KeyedBroadcastProcessFunction<Long, Packet
         var dec = packet.getDecoded();
 
         try {
-            var plainText = StringEscapeUtils.unescapeHtml4(
+            var plainText = safeString(
                   new String(dec.getPayload().toByteArray(), messageCharset)
             );
+//            var plainText = ReplaceNonPrintableWithHex.replace(dec.toByteArray());
             var channel = packet.getChannel();
+
+            if (plainText.isBlank()) {
+                return;
+            }
 
             var textMessage = TextMessage.builder()
                   .text(plainText)
@@ -88,7 +93,7 @@ public class TextAppProcessor extends KeyedBroadcastProcessFunction<Long, Packet
 
             if (plainText.trim().equalsIgnoreCase("ping")) {
 
-                var pong = "pong" + hopsAway(stub);
+                var pong = "pong" + " - " + hopsAway(stub);
 
                 var send = new SendMessage();
                 send.setChannel(channel);
@@ -103,7 +108,7 @@ public class TextAppProcessor extends KeyedBroadcastProcessFunction<Long, Packet
 
             String ntMessage = textMessage.getText();
 
-            ntMessage += "\n" + hops(packet) + hopsAway(stub);
+            ntMessage += "\n" + hopsAway(stub);
 
             var nt = new Notification()
                   .withTitle(fromNode, channel)
@@ -128,12 +133,13 @@ public class TextAppProcessor extends KeyedBroadcastProcessFunction<Long, Packet
     }
 
     private static String hopsAway(Optional<NodeInfoStub> stub) {
-        return stub.map(s -> ", hops away: " + s.hopsAway)
+        return stub.map(s -> "hops away: " + s.hopsAway)
               .orElse("");
     }
 
-    private static String hops(MeshPacket packet) {
-        return "Hops (L: " + packet.getHopLimit() + " S: " + packet.getHopStart() + ")";
+    static String safeString(String data) {
+        //return data.replaceAll("\\p{C}", "");
+        return data.replaceAll("[\\x00-\\x08\\x0B\\x0C\\x0E-\\x1F\\x7F]", "");
     }
 
     private Optional<NodeInfoStub> nodeInfo(KeyedBroadcastProcessFunction<Long, Packet, Row, Row>.ReadOnlyContext ctx) throws Exception {
