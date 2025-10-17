@@ -6,11 +6,14 @@ import io.github.s7i.meshtastic.intelligence.Model.TextMessage;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.java.utils.ParameterTool;
 import org.apache.flink.connector.jdbc.JdbcSink;
 import org.apache.flink.connector.kafka.sink.KafkaSink;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
+import org.apache.flink.streaming.api.windowing.assigners.TumblingEventTimeWindows;
+import org.apache.flink.streaming.api.windowing.time.Time;
 
 @Slf4j
 public class TextMessageJob extends JobStub {
@@ -21,6 +24,7 @@ public class TextMessageJob extends JobStub {
 
     @Override
     public void build() {
+        var textMessagesWindow = Integer.parseInt(cfg.getOption("text.message.window", "60")) ;
 
         var packetStream = fromKafkaSource()
               .process(new NodeAndTextMessageProcessor())
@@ -36,11 +40,6 @@ public class TextMessageJob extends JobStub {
               .uid("text-app")
               .name("Text App Processor");
 
-        textRowsStream.getSideOutput(TextAppProcessor.NOTIFICATION)
-              .addSink(new TextMessageNotification())
-              .disableChaining()
-              .name("Http Notifications");
-
         var sendCfg = cfg.getTopic("send-message");
         var props = kafkaProperties(sendCfg);
 
@@ -55,6 +54,18 @@ public class TextMessageJob extends JobStub {
               .disableChaining()
               .uid("send-message-sink")
               .name("Send Message Sink");
+
+        var ntWindowStream = textRowsStream.getSideOutput(TextAppProcessor.NOTIFICATION_WINDOW_OUTPUT_TAQ)
+              .windowAll(TumblingEventTimeWindows.of(Time.of(textMessagesWindow, TimeUnit.MINUTES)))
+              .process(new TextMessageWindow())
+              .name("Windowed Messages")
+              .uid("windowed-messages");
+
+        textRowsStream.getSideOutput(TextAppProcessor.NOTIFICATION)
+              .union(ntWindowStream)
+              .addSink(new TextMessageNotification())
+              .disableChaining()
+              .name("Http Notifications");
 
         textRowsStream.addSink(JdbcSink.sink(
                     cfg.getOption("text.sink.jdbc.sql"),

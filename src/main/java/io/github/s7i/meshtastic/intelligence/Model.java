@@ -76,13 +76,13 @@ public abstract class Model {
     public static class Notification {
 
         public Notification withTitle(Object from, Object chann) {
-            title = String.format("Message from node: (%s) on channel: (%s)",
+            title = String.format("Node: (%s) on channel: (%s)",
                   from, chann
             );
             return this;
         }
 
-        public Notification withMessage(Object time, Object text) {
+        public Notification withMessage(LocalDateTime time, Object text) {
             message = String.format("Time: %s\nText: %s",
                   time, text
             );

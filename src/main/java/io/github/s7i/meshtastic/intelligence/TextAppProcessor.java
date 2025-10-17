@@ -12,6 +12,7 @@ import java.util.Map;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.common.accumulators.ListAccumulator;
+import org.apache.flink.api.common.state.BroadcastState;
 import org.apache.flink.api.common.state.MapStateDescriptor;
 import org.apache.flink.api.common.typeinfo.BasicTypeInfo;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
@@ -25,10 +26,17 @@ import org.apache.flink.util.OutputTag;
 public class TextAppProcessor extends KeyedBroadcastProcessFunction<Long, Packet, Row, Row> implements Helper {
 
 
+    public static final OutputTag<Notification> NOTIFICATION = new OutputTag<>("MTX_NT", TypeInformation.of(Notification.class));
+
+    public static final OutputTag<SendMessage> SEND_MESSAGE_OUTPUT_TAQ = new OutputTag<>("SEND_MESSAGE", TypeInformation.of(SendMessage.class));
+
+    public static final OutputTag<Notification> NOTIFICATION_WINDOW_OUTPUT_TAQ = new OutputTag<>("MTX_WND_NT", TypeInformation.of(Notification.class));
+
     public static final MapStateDescriptor<Long, Row> NODES_BROADCAST = new MapStateDescriptor<>(
           "NodesBroadcast",
           BasicTypeInfo.LONG_TYPE_INFO,
           TypeInformation.of(Row.class));
+    public static final int DEFAULT_CHANNEL = 0;
 
 
     private transient String messageCharset;
@@ -36,9 +44,6 @@ public class TextAppProcessor extends KeyedBroadcastProcessFunction<Long, Packet
 
     private ListAccumulator<String> accuMessages = new ListAccumulator<>();
 
-    public static final OutputTag<Notification> NOTIFICATION = new OutputTag<>("MTX_NT", TypeInformation.of(Notification.class));
-
-    public static final OutputTag<SendMessage> SEND_MESSAGE_OUTPUT_TAQ = new OutputTag<>("SEND_MESSAGE", TypeInformation.of(SendMessage.class));
 
     static class NodeInfoStub {
 
@@ -118,7 +123,11 @@ public class TextAppProcessor extends KeyedBroadcastProcessFunction<Long, Packet
                 nt.withTitle(ni.name, channel);
             });
 
-            ctx.output(NOTIFICATION, nt);
+            if (channel != DEFAULT_CHANNEL) {
+                ctx.output(NOTIFICATION, nt);
+            } else {
+                ctx.output(NOTIFICATION_WINDOW_OUTPUT_TAQ, nt);
+            }
 
             accuMessages.add(nt.getTitle() + " | " + nt.getMessage());
 
@@ -160,6 +169,7 @@ public class TextAppProcessor extends KeyedBroadcastProcessFunction<Long, Packet
 
     @Override
     public void processBroadcastElement(Row value, KeyedBroadcastProcessFunction<Long, Packet, Row, Row>.Context ctx, Collector<Row> out) throws Exception {
-        ctx.getBroadcastState(NODES_BROADCAST).put(value.getFieldAs(NodeInfoDescriptor.NODE_ID.ordinal()), value);
+        BroadcastState<Long, Row> broadcastState = ctx.getBroadcastState(NODES_BROADCAST);
+        broadcastState.put(value.getFieldAs(NodeInfoDescriptor.NODE_ID.ordinal()), value);
     }
 }
