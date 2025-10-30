@@ -1,6 +1,7 @@
 package io.github.s7i.meshtastic.intelligence;
 
 import com.geeksville.mesh.MeshProtos.FromRadio;
+import io.github.s7i.meshtastic.intelligence.Model.MeshCommand;
 import io.github.s7i.meshtastic.intelligence.Model.SendMessage;
 import io.github.s7i.meshtastic.intelligence.Model.TextMessage;
 import java.sql.Timestamp;
@@ -12,6 +13,7 @@ import org.apache.flink.api.java.utils.ParameterTool;
 import org.apache.flink.connector.jdbc.JdbcSink;
 import org.apache.flink.connector.kafka.sink.KafkaSink;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
+import org.apache.flink.streaming.api.functions.sink.DiscardingSink;
 import org.apache.flink.streaming.api.windowing.assigners.TumblingEventTimeWindows;
 import org.apache.flink.streaming.api.windowing.time.Time;
 
@@ -24,7 +26,7 @@ public class TextMessageJob extends JobStub {
 
     @Override
     public void build() {
-        var textMessagesWindow = Integer.parseInt(cfg.getOption("text.message.window", "60")) ;
+        var textMessagesWindow = Integer.parseInt(cfg.getOption("text.message.window", "60"));
 
         var packetStream = fromKafkaSource()
               .process(new NodeAndTextMessageProcessor())
@@ -55,6 +57,16 @@ public class TextMessageJob extends JobStub {
               .uid("send-message-sink")
               .name("Send Message Sink");
 
+        var meshCommand = cfg.getTopic("mesh-command");
+        textRowsStream.getSideOutput(TextAppProcessor.CMD_OUTPUT_TAQ)
+              .sinkTo(KafkaSink.<MeshCommand>builder()
+                    .setRecordSerializer(new MeshCommandKafkaSerializer(meshCommand.getName()))
+                    .setKafkaProducerConfig(kafkaProperties(meshCommand))
+                    .build())
+              .disableChaining()
+              .uid("mesh-cmd-sink")
+              .name("Mesh Command Sink");
+
         var ntWindowStream = textRowsStream.getSideOutput(TextAppProcessor.NOTIFICATION_WINDOW_OUTPUT_TAQ)
               .windowAll(TumblingEventTimeWindows.of(Time.of(textMessagesWindow, TimeUnit.MINUTES)))
               .process(new TextMessageWindow())
@@ -67,24 +79,29 @@ public class TextMessageJob extends JobStub {
               .disableChaining()
               .name("Http Notifications");
 
-        textRowsStream.addSink(JdbcSink.sink(
-                    cfg.getOption("text.sink.jdbc.sql"),
-                    (stmt, row) -> {
-                        LocalDateTime ldt = row.getFieldAs(TextMessage.TIME);
-                        var ts = new Timestamp(ldt.toInstant(ZoneOffset.UTC).toEpochMilli());
+        if (cfg.hasFlag("flags", "no-database")) {
+            textRowsStream.addSink(new DiscardingSink<>())
+                  .name("discard-sink");
+        } else {
+            textRowsStream.addSink(JdbcSink.sink(
+                        cfg.getOption("text.sink.jdbc.sql"),
+                        (stmt, row) -> {
+                            LocalDateTime ldt = row.getFieldAs(TextMessage.TIME);
+                            var ts = new Timestamp(ldt.toInstant(ZoneOffset.UTC).toEpochMilli());
 
-                        stmt.setLong(1, row.getFieldAs(TextMessage.FROM_NODE));
-                        stmt.setLong(2, row.getFieldAs(TextMessage.TO_NODE));
-                        stmt.setInt(3, row.getFieldAs(TextMessage.CHANNEL));
-                        stmt.setTimestamp(4, ts);
-                        stmt.setString(5, row.getFieldAs(TextMessage.TEXT));
-                        stmt.setString(6, row.getFieldAs(TextMessage.JOB_ID));
-                    },
-                    getJdbcExecutionOptions(),
-                    getJdbcConnectionOptions()
-              ))
-              .name("postgres")
-              .disableChaining();
+                            stmt.setLong(1, row.getFieldAs(TextMessage.FROM_NODE));
+                            stmt.setLong(2, row.getFieldAs(TextMessage.TO_NODE));
+                            stmt.setInt(3, row.getFieldAs(TextMessage.CHANNEL));
+                            stmt.setTimestamp(4, ts);
+                            stmt.setString(5, row.getFieldAs(TextMessage.TEXT));
+                            stmt.setString(6, row.getFieldAs(TextMessage.JOB_ID));
+                        },
+                        getJdbcExecutionOptions(),
+                        getJdbcConnectionOptions()
+                  ))
+                  .name("postgres")
+                  .disableChaining();
+        }
 
         try {
             env.executeAsync(jobName());

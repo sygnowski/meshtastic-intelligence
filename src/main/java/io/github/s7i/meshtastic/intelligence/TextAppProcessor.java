@@ -1,15 +1,21 @@
 package io.github.s7i.meshtastic.intelligence;
 
+import static io.github.s7i.meshtastic.intelligence.ConfigOptions.OPT_CMD_CHANNEL;
+import static io.github.s7i.meshtastic.intelligence.ConfigOptions.OPT_CMD_PREFIX;
+
 import com.geeksville.mesh.MeshProtos.FromRadio;
-import com.geeksville.mesh.MeshProtos.MeshPacket;
+import io.github.s7i.meshtastic.intelligence.Model.MeshCommand;
 import io.github.s7i.meshtastic.intelligence.Model.NodeInfoDescriptor;
 import io.github.s7i.meshtastic.intelligence.Model.Notification;
 import io.github.s7i.meshtastic.intelligence.Model.SendMessage;
 import io.github.s7i.meshtastic.intelligence.Model.TextMessage;
 import io.github.s7i.meshtastic.intelligence.io.Packet;
 import java.nio.charset.StandardCharsets;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.function.Predicate;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.common.accumulators.ListAccumulator;
 import org.apache.flink.api.common.state.BroadcastState;
@@ -29,6 +35,7 @@ public class TextAppProcessor extends KeyedBroadcastProcessFunction<Long, Packet
     public static final OutputTag<Notification> NOTIFICATION = new OutputTag<>("MTX_NT", TypeInformation.of(Notification.class));
 
     public static final OutputTag<SendMessage> SEND_MESSAGE_OUTPUT_TAQ = new OutputTag<>("SEND_MESSAGE", TypeInformation.of(SendMessage.class));
+    public static final OutputTag<MeshCommand> CMD_OUTPUT_TAQ = new OutputTag<>("CMD_MESSAGE", TypeInformation.of(MeshCommand.class));
 
     public static final OutputTag<Notification> NOTIFICATION_WINDOW_OUTPUT_TAQ = new OutputTag<>("MTX_WND_NT", TypeInformation.of(Notification.class));
 
@@ -37,12 +44,12 @@ public class TextAppProcessor extends KeyedBroadcastProcessFunction<Long, Packet
           BasicTypeInfo.LONG_TYPE_INFO,
           TypeInformation.of(Row.class));
     public static final int DEFAULT_CHANNEL = 0;
-
-
     private transient String messageCharset;
     private transient int accuSize;
+    private transient Set<Integer> commandChannel;
+    private transient Predicate<String> commandValidator;
 
-    private ListAccumulator<String> accuMessages = new ListAccumulator<>();
+    private final ListAccumulator<String> accuMessages = new ListAccumulator<>();
 
 
     static class NodeInfoStub {
@@ -54,6 +61,7 @@ public class TextAppProcessor extends KeyedBroadcastProcessFunction<Long, Packet
     @Override
     public void open(Configuration parameters) throws Exception {
         super.open(parameters);
+        commandChannel = new HashSet<>();
 
         Map<String, String> cfg = getRuntimeContext()
               .getExecutionConfig()
@@ -64,6 +72,16 @@ public class TextAppProcessor extends KeyedBroadcastProcessFunction<Long, Packet
 
         accuSize = Integer.parseInt(cfg.getOrDefault("message.accu.size", "10"));
 
+        if (cfg.containsKey(OPT_CMD_CHANNEL)) {
+            int chn = Integer.parseInt(cfg.get(OPT_CMD_CHANNEL));
+            log.info("Command channel {}", chn);
+            commandChannel.add(chn);
+        }
+
+        final var cmdPrefix = cfg.getOrDefault(OPT_CMD_PREFIX, "!");
+        log.info("Command prefix: {}", cmdPrefix);
+        commandValidator = txt -> txt.startsWith(cmdPrefix);
+
         log.info("Using message charset: {}", messageCharset);
 
         getRuntimeContext().addAccumulator("messages", accuMessages);
@@ -72,15 +90,14 @@ public class TextAppProcessor extends KeyedBroadcastProcessFunction<Long, Packet
     @Override
     public void processElement(Packet value, KeyedBroadcastProcessFunction<Long, Packet, Row, Row>.ReadOnlyContext ctx, Collector<Row> out) throws Exception {
         final long fromNode = ctx.getCurrentKey();
-        final var stub = nodeInfo(ctx);
-        MeshPacket packet = FromRadio.parseFrom(value.payload()).getPacket();
-        var dec = packet.getDecoded();
+        final var nodeInfo = nodeInfo(ctx);
+        final var packet = FromRadio.parseFrom(value.payload()).getPacket();
+        final var dec = packet.getDecoded();
 
         try {
             var plainText = safeString(
                   new String(dec.getPayload().toByteArray(), messageCharset)
             );
-//            var plainText = ReplaceNonPrintableWithHex.replace(dec.toByteArray());
             var channel = packet.getChannel();
 
             if (plainText.isBlank()) {
@@ -97,8 +114,11 @@ public class TextAppProcessor extends KeyedBroadcastProcessFunction<Long, Packet
                   .build();
 
             if (plainText.trim().equalsIgnoreCase("ping")) {
-
-                var pong = "pong" + " - " + hopsAway(stub);
+                var pong = "pong" + nodeInfo.map(s ->
+                      " - "
+                            + "hops away: "
+                            + s.hopsAway
+                ).orElse("");
 
                 var send = new SendMessage();
                 send.setChannel(channel);
@@ -107,21 +127,28 @@ public class TextAppProcessor extends KeyedBroadcastProcessFunction<Long, Packet
                 send.setMesssage(pong);
 
                 ctx.output(SEND_MESSAGE_OUTPUT_TAQ, send);
+
+            } else if (commandChannel.contains(channel) && commandValidator.test(plainText)) {
+                var mcmd = new MeshCommand();
+                mcmd.setChannel(channel);
+                mcmd.setFrom(fromNode);
+                mcmd.setCommand(plainText);
+
+                ctx.output(CMD_OUTPUT_TAQ, mcmd);
             }
 
             out.collect(textMessage.toRow());
 
-            String ntMessage = textMessage.getText();
-
-            ntMessage += "\n" + hopsAway(stub);
-
+            var ntMessage = nodeInfo.map(s ->
+                  textMessage.getText()
+                        + "\n"
+                        + "hops away: "
+                        + s.hopsAway
+            ).orElse(textMessage.getText());
+            var node = nodeInfo.<Object>map(ni -> ni.name).orElse(fromNode);
             var nt = new Notification()
-                  .withTitle(fromNode, channel)
+                  .withTitle(node, channel)
                   .withMessage(textMessage.getTime(), ntMessage);
-
-            stub.ifPresent(ni -> {
-                nt.withTitle(ni.name, channel);
-            });
 
             if (channel != DEFAULT_CHANNEL) {
                 ctx.output(NOTIFICATION, nt);
@@ -139,11 +166,6 @@ public class TextAppProcessor extends KeyedBroadcastProcessFunction<Long, Packet
         } catch (Exception e) {
             log.warn("can't read message from: {}, why: ", packet, e);
         }
-    }
-
-    private static String hopsAway(Optional<NodeInfoStub> stub) {
-        return stub.map(s -> "hops away: " + s.hopsAway)
-              .orElse("");
     }
 
     static String safeString(String data) {

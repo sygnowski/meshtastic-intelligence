@@ -124,4 +124,11 @@ public abstract class Model {
         private String messsage;
     }
 
+    @Data
+    public static class MeshCommand {
+        private int channel;
+        private long from;
+        private String command;
+    }
+
 }
