@@ -39,4 +39,13 @@ class ConfigurationTest {
         assertThrows(IllegalStateException.class, () -> c.getOption("value-with-missing-expression"));
 
     }
+
+    @Test
+    void config_with_flag() {
+        Configuration c = Configuration.from("src/test/resources/conf.yaml");
+
+        assertTrue(c.hasFlag("flags", "flagB"));
+        assertFalse(c.hasFlag("flags", "D"));
+
+    }
 }

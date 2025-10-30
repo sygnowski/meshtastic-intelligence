@@ -4,8 +4,13 @@ import static java.util.Objects.requireNonNull;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.SneakyThrows;
@@ -21,6 +26,7 @@ import org.yaml.snakeyaml.constructor.Constructor;
 public class Configuration {
 
     private class Resolver implements StringLookup {
+
         private final StringSubstitutor sysSubstitutor = StringSubstitutor.createInterpolator().setEnableSubstitutionInVariables(true);
         private final StringSubstitutor substitutor = new StringSubstitutor(this).setEnableSubstitutionInVariables(true);
 
@@ -28,8 +34,9 @@ public class Configuration {
         @Override
         public String lookup(String key) {
             return Configuration.this.findOption(key)
-                    .orElseThrow(() -> new IllegalStateException("can't resolve: " + key));
+                  .orElseThrow(() -> new IllegalStateException("can't resolve: " + key));
         }
+
         public String resolve(String input) {
             return sysSubstitutor.replace(substitutor.replace(input));
         }
@@ -105,5 +112,26 @@ public class Configuration {
         } else {
             log.debug("no action on option: {}", optionName);
         }
+    }
+
+    public boolean hasFlag(String option, String flag) {
+        requireNonNull(option);
+        requireNonNull(flag);
+
+        return findOption(option)
+              .map(Configuration::split)
+              .stream()
+              .flatMap(Function.identity())
+              .anyMatch(flag::equals);
+    }
+
+
+    private static Stream<String> split(String csv) {
+        if (csv == null) {
+            return Stream.empty();
+        }
+        return Arrays.stream(csv.split("\\,"))
+              .filter(Predicate.not(String::isEmpty))
+              .map(String::trim);
     }
 }

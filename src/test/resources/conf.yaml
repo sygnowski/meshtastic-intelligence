@@ -8,7 +8,7 @@ topics:
       client.id=1231
 options:
   - name: flags
-    value:
+    value: flagA,flagB,flagC
   - name: catalog.jdbc
     value: jdbc:postgresql://localhost:5432/
   - name: catalog.name
