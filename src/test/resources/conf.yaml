@@ -35,6 +35,9 @@ options:
       'username' = 'myuser',
       'password' = 'mypassword'
       )
+  - name: module.allowed
+    value: _
+
   - name: description
     value: >-
       Meshtastic Radio records intelligence.

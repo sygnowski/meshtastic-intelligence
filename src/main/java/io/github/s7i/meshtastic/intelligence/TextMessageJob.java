@@ -7,7 +7,9 @@ import io.github.s7i.meshtastic.intelligence.Model.TextMessage;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.java.utils.ParameterTool;
 import org.apache.flink.connector.jdbc.JdbcSink;
@@ -20,6 +22,13 @@ import org.apache.flink.streaming.api.windowing.time.Time;
 @Slf4j
 public class TextMessageJob extends JobStub {
 
+    public static final String ANY_MODULE = "_";
+    public static final String UNNAMED = "unnamed";
+
+    static List<String> allowedModules(Configuration cfg) {
+        return Configuration.split(cfg.getOption("module.allowed", ANY_MODULE)).collect(Collectors.toList());
+    }
+
     public TextMessageJob(ParameterTool params, StreamExecutionEnvironment env, Configuration cfg) {
         super(params, env, cfg);
     }
@@ -28,7 +37,13 @@ public class TextMessageJob extends JobStub {
     public void build() {
         var textMessagesWindow = Integer.parseInt(cfg.getOption("text.message.window", "60"));
 
+        var allowed = allowedModules(cfg);
+
         var packetStream = fromKafkaSource()
+              .keyBy(packet ->
+                    packet.key() != null ? new String(packet.key()) : UNNAMED)
+              .process(new ModuleProcessor(allowed))
+              .name("module-processor")
               .process(new NodeAndTextMessageProcessor())
               .name("NodeInfo And TextProcessor")
               .disableChaining();

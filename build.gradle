@@ -12,16 +12,6 @@ version = '0.1-SNAPSHOT'
 mainClassName = 'io.github.s7i.meshtastic.intelligence.IntelligenceJob'
 description = 'Flink Meshtastic'
 
-ext {
-    grcpVersion= '1.51.0'
-    flinkVersion = '1.17.2'
-    scalaBinVer = '_2.12'
-    slf4jVersion = '1.7.36'
-    log4jVersion = '2.17.1'
-    flinkJdbcVer = '3.1.2-1.17'
-    lombok = '1.18.38'
-}
-
 sourceCompatibility = JavaVersion.VERSION_11
 targetCompatibility = JavaVersion.VERSION_11
 
@@ -66,44 +56,21 @@ configurations {
 }
 // declare the dependencies for your production and test code
 dependencies {
-    // --------------------------------------------------------------
-    // Compile-time dependencies that should NOT be part of the
-    // shadow (uber) jar and are provided in the lib folder of Flink
-    // --------------------------------------------------------------
-    implementation "org.apache.flink:flink-streaming-java:${flinkVersion}"
-    implementation "org.apache.flink:flink-table-planner-loader:${flinkVersion}"
-    implementation "org.apache.flink:flink-table-runtime:${flinkVersion}"
-    implementation "org.apache.flink:flink-table-api-java:${flinkVersion}"
-    implementation "org.apache.flink:flink-table-api-java-bridge:${flinkVersion}"
-    implementation "org.apache.flink:flink-clients:${flinkVersion}"
-    //implementation "org.apache.flink:flink-connector-kafka:${flinkVersion}"
-    //implementation "org.apache.flink:flink-connector-jdbc:3.2.0-1.19"
-    // --------------------------------------------------------------
-    // Dependencies that should be part of the shadow jar, e.g.
-    // connectors. These must be in the flinkShadowJar configuration!
-    // --------------------------------------------------------------
-    flinkShadowJar "org.apache.flink:flink-connector-kafka:${flinkVersion}"
-    flinkShadowJar "io.github.s7i.meshtastic.proto:meshtastic-proto:1.0",
-            'org.yaml:snakeyaml:2.3',
-            'com.google.protobuf:protobuf-java:3.21.9',
-            "io.grpc:grpc-stub:$grcpVersion",
-            "io.grpc:grpc-protobuf:$grcpVersion",
-//            "org.postgresql:postgresql:42.7.5",
-            "org.apache.commons:commons-text:1.10.0",
-            "org.apache.flink:flink-connector-jdbc:${flinkJdbcVer}"
+    implementation libs.bundles.flink.provided
 
-    runtimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:${log4jVersion}"
-    runtimeOnly "org.apache.logging.log4j:log4j-api:${log4jVersion}"
-    runtimeOnly "org.apache.logging.log4j:log4j-core:${log4jVersion}"
+    flinkShadowJar libs.bundles.flink.shadow
 
-    testImplementation platform('org.junit:junit-bom:5.10.0')
-    testImplementation 'org.junit.jupiter:junit-jupiter'
+    runtimeOnly libs.log4j.slf4j.impl
+    runtimeOnly libs.log4j.api
+    runtimeOnly libs.log4j.core
 
-    compileOnly("org.projectlombok:lombok:${lombok}")
-    annotationProcessor("org.projectlombok:lombok:${lombok}")
+    testImplementation platform(libs.junit.bom)
+    testImplementation libs.junit.jupiter
 
-    testCompileOnly("org.projectlombok:lombok:${lombok}")
-    testAnnotationProcessor("org.projectlombok:lombok:${lombok}")
+    compileOnly libs.lombok
+    annotationProcessor libs.lombok
+    testCompileOnly libs.lombok
+    testAnnotationProcessor libs.lombok
 }
 // make compileOnly dependencies available for tests:
 sourceSets {

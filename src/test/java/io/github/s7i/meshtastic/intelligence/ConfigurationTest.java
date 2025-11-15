@@ -1,5 +1,6 @@
 package io.github.s7i.meshtastic.intelligence;
 
+import java.util.List;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -46,6 +47,14 @@ class ConfigurationTest {
 
         assertTrue(c.hasFlag("flags", "flagB"));
         assertFalse(c.hasFlag("flags", "D"));
+
+    }
+
+    @Test
+    void module_allowed() {
+        Configuration c = Configuration.from("src/test/resources/conf.yaml");
+
+        assertEquals(List.of(TextMessageJob.ANY_MODULE), TextMessageJob.allowedModules(c));
 
     }
 }

@@ -1,0 +1,72 @@
+[versions]
+flink = "1.17.2"
+flink-jdbc = "3.1.2-1.17"
+grpc = "1.51.0"
+scala-bin = "2.12"
+slf4j = "1.7.36"
+log4j = "2.17.1"
+lombok = "1.18.38"
+junit = "5.10.0"
+protobuf = "3.21.9"
+snakeyaml = "2.3"
+commons-text = "1.10.0"
+meshtastic-proto = "2.7.11"
+shadow = "7.1.2"
+git-properties = "2.4.2"
+
+[plugins]
+shadow = { id = "com.github.johnrengelman.shadow", version.ref = "shadow" }
+git-properties = { id = "com.gorylenko.gradle-git-properties", version.ref = "git-properties" }
+
+[libraries]
+# Flink – provided (nie w shadow JAR)
+flink-streaming-java = { module = "org.apache.flink:flink-streaming-java", version.ref = "flink" }
+flink-table-planner-loader = { module = "org.apache.flink:flink-table-planner-loader", version.ref = "flink" }
+flink-table-runtime = { module = "org.apache.flink:flink-table-runtime", version.ref = "flink" }
+flink-table-api-java = { module = "org.apache.flink:flink-table-api-java", version.ref = "flink" }
+flink-table-api-java-bridge = { module = "org.apache.flink:flink-table-api-java-bridge", version.ref = "flink" }
+flink-clients = { module = "org.apache.flink:flink-clients", version.ref = "flink" }
+
+# Connector-y i biblioteki do shadow JAR
+flink-connector-kafka = { module = "org.apache.flink:flink-connector-kafka", version.ref = "flink" }
+flink-connector-jdbc = { module = "org.apache.flink:flink-connector-jdbc", version.ref = "flink-jdbc" }
+
+meshtastic-proto = { module = "io.github.s7i.meshtastic.proto:meshtastic-proto", version.ref = "meshtastic-proto" }
+snakeyaml = { module = "org.yaml:snakeyaml", version.ref = "snakeyaml" }
+protobuf-java = { module = "com.google.protobuf:protobuf-java", version.ref = "protobuf" }
+grpc-stub = { module = "io.grpc:grpc-stub", version.ref = "grpc" }
+grpc-protobuf = { module = "io.grpc:grpc-protobuf", version.ref = "grpc" }
+commons-text = { module = "org.apache.commons:commons-text", version.ref = "commons-text" }
+
+# Logging (runtimeOnly)
+log4j-slf4j-impl = { module = "org.apache.logging.log4j:log4j-slf4j-impl", version.ref = "log4j" }
+log4j-api = { module = "org.apache.logging.log4j:log4j-api", version.ref = "log4j" }
+log4j-core = { module = "org.apache.logging.log4j:log4j-core", version.ref = "log4j" }
+
+# Lombok
+lombok = { module = "org.projectlombok:lombok", version.ref = "lombok" }
+
+# Test
+junit-bom = { module = "org.junit:junit-bom", version.ref = "junit" }
+junit-jupiter = { module = "org.junit.jupiter:junit-jupiter" }
+
+[bundles]
+flink-provided = [
+    "flink-streaming-java",
+    "flink-table-planner-loader",
+    "flink-table-runtime",
+    "flink-table-api-java",
+    "flink-table-api-java-bridge",
+    "flink-clients"
+]
+
+flink-shadow = [
+    "flink-connector-kafka",
+    "flink-connector-jdbc",
+    "meshtastic-proto",
+    "snakeyaml",
+    "protobuf-java",
+    "grpc-stub",
+    "grpc-protobuf",
+    "commons-text"
+]

@@ -10,10 +10,8 @@ public class Packet {
     public Packet() {
 
     }
-    public Packet(byte[] payload) {
-        this.payload = payload;
-    }
 
-    byte[] payload;
     long timestamp;
+    byte[] key;
+    byte[] payload;
 }

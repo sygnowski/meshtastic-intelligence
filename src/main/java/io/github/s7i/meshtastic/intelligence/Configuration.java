@@ -126,7 +126,7 @@ public class Configuration {
     }
 
 
-    private static Stream<String> split(String csv) {
+    public static Stream<String> split(String csv) {
         if (csv == null) {
             return Stream.empty();
         }

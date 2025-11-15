@@ -17,10 +17,13 @@ public class PacketDeserializer implements KafkaRecordDeserializationSchema<Pack
     public void deserialize(ConsumerRecord<byte[], byte[]> consumerRecord, Collector<Packet> collector) throws IOException {
         var pck = new Packet();
 
-        var value = consumerRecord.value();
-        pck.payload(Arrays.copyOf(value, value.length));
-
         pck.timestamp(consumerRecord.timestamp());
+
+        var key = consumerRecord.key();
+        pck.key(key);
+
+        var value = consumerRecord.value();
+        pck.payload(value);
 
         collector.collect(pck);
     }
