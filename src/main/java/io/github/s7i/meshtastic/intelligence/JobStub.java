@@ -53,6 +53,7 @@ public abstract class JobStub {
         return env.fromSource(buildSource(source),
                     WatermarkStrategy.
                           <Packet>forBoundedOutOfOrderness(Duration.ofMillis(watermarkDuration))
+                          .withIdleness(Duration.ofHours(1))
                           .withTimestampAssigner((element, recordTimestamp) -> element.timestamp()), "mesh packets")
               .uid(UUID_KAFKA_SOURCE)
               .name("from kafka topic: " + source.getName() + " @ " + kafkaServes);
