@@ -1,0 +1,38 @@
+{
+  "messageHash": "773709D3",
+  "routeType": 1,
+  "payloadType": 4,
+  "payloadVersion": 0,
+  "pathLength": 5,
+  "path": [
+    "C5",
+    "ED",
+    "E2",
+    "56",
+    "C8"
+  ],
+  "payload": {
+    "raw": "146AC5C2BC9520BECF89E3FE2C4076914256A6B6A35AF335DA1618BA826AA7383C3D466678067E926264CE5CBB95FF5380E87E949C1243455576C653763D4D6917ABDCAA851FD010A16D90EA61B4CD9C3516D2BCC2DA00DB94D2D691EBE90C1C65610601925EBD0A039D9A080148656C74656320563420525054204A656C637A",
+    "decoded": {
+      "type": 4,
+      "version": 0,
+      "isValid": true,
+      "publicKey": "146AC5C2BC9520BECF89E3FE2C4076914256A6B6A35AF335DA1618BA826AA738",
+      "timestamp": 1715879228,
+      "signature": "78067E926264CE5CBB95FF5380E87E949C1243455576C653763D4D6917ABDCAA851FD010A16D90EA61B4CD9C3516D2BCC2DA00DB94D2D691EBE90C1C65610601",
+      "appData": {
+        "flags": 146,
+        "deviceRole": 2,
+        "hasLocation": true,
+        "hasName": true,
+        "location": {
+          "latitude": 51.035486,
+          "longitude": 17.341085
+        },
+        "name": "Heltec V4 RPT Jelcz"
+      }
+    }
+  },
+  "totalBytes": 135,
+  "isValid": true
+}

@@ -8,6 +8,7 @@ public class MeshcoreDecoded {
 
     @Data
     public static class Decoded {
+        Integer type;
         String channelHash;
         Decrypted decrypted;
     }
@@ -23,6 +24,7 @@ public class MeshcoreDecoded {
     public static class Payload {
         Decoded decoded;
     }
+    private Integer payloadType;
     private List<String> path;
     private Payload payload;
 }

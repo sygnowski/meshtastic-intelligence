@@ -1,0 +1,33 @@
+{
+  "messageHash": "DD052880",
+  "routeType": 1,
+  "payloadType": 5,
+  "payloadVersion": 0,
+  "pathLength": 4,
+  "path": [
+    "70",
+    "E2",
+    "56",
+    "C8"
+  ],
+  "payload": {
+    "raw": "11AF30F595956A317581E56891CBA8335A2FE8EC66B707AEF6D168EC006D073C59F7C227A15D742E6B9280073225902F57F9F266003DFD7FEDBA827B4134E915088393012F58755B258C0059601F4DD1AAB61E",
+    "decoded": {
+      "type": 5,
+      "version": 0,
+      "isValid": true,
+      "channelHash": "11",
+      "cipherMac": "AF30",
+      "ciphertext": "F595956A317581E56891CBA8335A2FE8EC66B707AEF6D168EC006D073C59F7C227A15D742E6B9280073225902F57F9F266003DFD7FEDBA827B4134E915088393012F58755B258C0059601F4DD1AAB61E",
+      "ciphertextLength": 80,
+      "decrypted": {
+        "timestamp": 1766007995,
+        "flags": 0,
+        "sender": "👑W\tSieci👑",
+        "message": "@[d33d Jelcz Mob] przebudowę właśnie projektujemy"
+      }
+    }
+  },
+  "totalBytes": 89,
+  "isValid": true
+}

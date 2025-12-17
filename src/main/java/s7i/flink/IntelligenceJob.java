@@ -21,7 +21,8 @@ public class IntelligenceJob {
     private static final Map<String, JobCreator> JOB_KIND = Map.of(
           "default", MeshJob::new,
           "node-info", MeshNodeInfoJob::new,
-          "text-app", TextMessageJob::new
+          "text-app", TextMessageJob::new,
+          "mc-text-app", s7i.flink.meshcore.TextMessageJob::new
     );
 
     interface JobCreator {

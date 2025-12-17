@@ -46,8 +46,10 @@ public class TextMessageJob extends JobStub {
         fromKafkaSource()
               .process(new ProcessDecoded())
               .uid("mc-text-proc")
+              .name("mc-text-proc")
               .addSink(new Sink())
-              .uid("pc-text-sink");
+              .uid("pc-text-sink")
+              .name("pc-text-sink");
 
         try {
             env.execute(jobName());
