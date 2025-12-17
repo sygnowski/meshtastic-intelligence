@@ -1,6 +1,5 @@
 package s7i.flink;
 
-import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -47,18 +46,17 @@ public class Gotify {
                   .POST(BodyPublishers.ofString(jsonText))
                   .build();
 
-            try {
-                var hnd = httpClient.send(request, BodyHandlers.ofString());
-                int statusCode = hnd.statusCode();
-                if (statusCode != 200) {
-                    throw new IllegalStateException();
-                }
-            } catch (IOException e) {
-                log.error("Http request failed", e);
-            } catch (InterruptedException e) {
-                log.warn("Interrupted", e);
-                Thread.currentThread().interrupt();
-            }
+                httpClient.sendAsync(request, BodyHandlers.ofString())
+                      .whenComplete((st, th) -> {
+                          if (th != null) {
+                              log.warn("gotify", th);
+                          } else {
+                              int statusCode = st.statusCode();
+                              if (statusCode != 200) {
+                                  log.warn("gotify status code: {}", statusCode);
+                              }
+                          }
+                      });
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
