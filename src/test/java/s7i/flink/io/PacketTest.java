@@ -1,4 +1,4 @@
-package io.github.s7i.meshtastic.intelligence.io;
+package s7i.flink.io;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;

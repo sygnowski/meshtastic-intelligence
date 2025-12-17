@@ -1,4 +1,4 @@
-package io.github.s7i.meshtastic.intelligence.io;
+package s7i.flink.io;
 
 import lombok.Data;
 import lombok.experimental.Accessors;

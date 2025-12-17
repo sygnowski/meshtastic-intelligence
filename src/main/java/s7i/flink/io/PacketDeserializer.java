@@ -1,7 +1,6 @@
-package io.github.s7i.meshtastic.intelligence.io;
+package s7i.flink.io;
 
 import java.io.IOException;
-import java.util.Arrays;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.connector.kafka.source.reader.deserializer.KafkaRecordDeserializationSchema;
 import org.apache.flink.util.Collector;

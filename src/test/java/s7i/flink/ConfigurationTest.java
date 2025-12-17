@@ -1,5 +1,6 @@
-package io.github.s7i.meshtastic.intelligence;
+package s7i.flink;
 
+import io.github.s7i.meshtastic.intelligence.TextMessageJob;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 

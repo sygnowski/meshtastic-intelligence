@@ -12,6 +12,8 @@ import org.apache.flink.connector.jdbc.JdbcSink;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.windowing.assigners.TumblingEventTimeWindows;
 import org.apache.flink.streaming.api.windowing.time.Time;
+import s7i.flink.Configuration;
+import s7i.flink.JobStub;
 
 @Slf4j
 public class MeshJob extends JobStub {

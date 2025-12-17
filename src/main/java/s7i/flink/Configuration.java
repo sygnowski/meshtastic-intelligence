@@ -1,4 +1,4 @@
-package io.github.s7i.meshtastic.intelligence;
+package s7i.flink;
 
 import static java.util.Objects.requireNonNull;
 
@@ -9,7 +9,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.Data;
 import lombok.NoArgsConstructor;

@@ -9,7 +9,7 @@ plugins {
 // artifact properties
 group = 'io.github.s7i.flink'
 version = '0.1-SNAPSHOT'
-mainClassName = 'io.github.s7i.meshtastic.intelligence.IntelligenceJob'
+mainClassName = 's7i.flink.IntelligenceJob'
 description = 'Flink Meshtastic'
 
 sourceCompatibility = JavaVersion.VERSION_11

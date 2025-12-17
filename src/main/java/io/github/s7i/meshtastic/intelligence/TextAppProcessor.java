@@ -9,7 +9,7 @@ import io.github.s7i.meshtastic.intelligence.Model.NodeInfoDescriptor;
 import io.github.s7i.meshtastic.intelligence.Model.Notification;
 import io.github.s7i.meshtastic.intelligence.Model.SendMessage;
 import io.github.s7i.meshtastic.intelligence.Model.TextMessage;
-import io.github.s7i.meshtastic.intelligence.io.Packet;
+import s7i.flink.io.Packet;
 import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.Map;

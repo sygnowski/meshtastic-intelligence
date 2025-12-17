@@ -1,7 +1,8 @@
-package io.github.s7i.meshtastic.intelligence;
+package s7i.flink;
 
-import io.github.s7i.meshtastic.intelligence.io.Packet;
-import io.github.s7i.meshtastic.intelligence.io.PacketDeserializer;
+import io.github.s7i.meshtastic.intelligence.GitProps;
+import s7i.flink.io.Packet;
+import s7i.flink.io.PacketDeserializer;
 import java.io.BufferedReader;
 import java.io.StringReader;
 import java.time.Duration;

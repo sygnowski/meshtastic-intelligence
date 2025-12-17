@@ -3,7 +3,7 @@ package io.github.s7i.meshtastic.intelligence;
 import com.geeksville.mesh.MeshProtos.FromRadio;
 import com.geeksville.mesh.MeshProtos.FromRadio.PayloadVariantCase;
 import com.geeksville.mesh.Portnums.PortNum;
-import io.github.s7i.meshtastic.intelligence.io.Packet;
+import s7i.flink.io.Packet;
 import io.github.s7i.meshtastic.intelligence.nodeinfo.NodeInfoToRowMapper;
 import org.apache.flink.streaming.api.functions.ProcessFunction;
 import org.apache.flink.types.Row;

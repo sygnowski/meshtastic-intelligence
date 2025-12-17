@@ -1,6 +1,6 @@
 package io.github.s7i.meshtastic.intelligence;
 
-import io.github.s7i.meshtastic.intelligence.io.Packet;
+import s7i.flink.io.Packet;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;

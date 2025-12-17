@@ -14,6 +14,8 @@ import org.apache.flink.table.api.EnvironmentSettings;
 import org.apache.flink.table.api.Schema;
 import org.apache.flink.table.api.TableEnvironment;
 import org.apache.flink.table.api.bridge.java.StreamTableEnvironment;
+import s7i.flink.Configuration;
+import s7i.flink.JobStub;
 
 @Slf4j
 public class MeshNodeInfoJob extends JobStub {

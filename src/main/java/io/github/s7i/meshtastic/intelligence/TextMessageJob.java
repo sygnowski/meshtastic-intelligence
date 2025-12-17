@@ -18,6 +18,8 @@ import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.sink.DiscardingSink;
 import org.apache.flink.streaming.api.windowing.assigners.TumblingEventTimeWindows;
 import org.apache.flink.streaming.api.windowing.time.Time;
+import s7i.flink.Configuration;
+import s7i.flink.JobStub;
 
 @Slf4j
 public class TextMessageJob extends JobStub {
@@ -25,7 +27,7 @@ public class TextMessageJob extends JobStub {
     public static final String ANY_MODULE = "_";
     public static final String UNNAMED = "unnamed";
 
-    static List<String> allowedModules(Configuration cfg) {
+    public static List<String> allowedModules(Configuration cfg) {
         return Configuration.split(cfg.getOption("module.allowed", ANY_MODULE)).collect(Collectors.toList());
     }
 

@@ -1,8 +1,11 @@
-package io.github.s7i.meshtastic.intelligence;
+package s7i.flink;
 
-import io.github.s7i.meshtastic.intelligence.Configuration.Option;
-import io.github.s7i.meshtastic.intelligence.io.Packet;
-import io.github.s7i.meshtastic.intelligence.io.PacketSerializer;
+import s7i.flink.Configuration.Option;
+import io.github.s7i.meshtastic.intelligence.MeshJob;
+import io.github.s7i.meshtastic.intelligence.MeshNodeInfoJob;
+import io.github.s7i.meshtastic.intelligence.TextMessageJob;
+import s7i.flink.io.Packet;
+import s7i.flink.io.PacketSerializer;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
