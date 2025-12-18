@@ -39,12 +39,7 @@ public class IntelligenceJob {
             var env = StreamExecutionEnvironment.getExecutionEnvironment();
             env.registerTypeWithKryoSerializer(Packet.class, PacketSerializer.class);
 
-            var cfg = Configuration.from(params.get("mesh-cfg", "/app/mesh.yml"));
-            var map = cfg.getOptions().stream()
-                  .filter(option -> option.getName() != null && option.getValue() != null)
-                  .collect(Collectors.toMap(Option::getName, Option::getValue));
-            map.putAll(params.toMap());
-            env.getConfig().setGlobalJobParameters(ParameterTool.fromMap(map));
+            var cfg = getConfiguration(params, env);
 
             var jobKind = cfg.getOption("job.kind", "default");
             Stream.of(jobKind)
@@ -52,11 +47,24 @@ public class IntelligenceJob {
                   .flatMap(Optional::stream)
                   .map(jobCreator -> jobCreator.create(params, env, cfg))
                   .findFirst()
-                  .orElseThrow(() -> new RuntimeException("unknown job kind" + jobKind))
+                  .orElseThrow(() -> new RuntimeException("unknown job kind: "
+                        + jobKind
+                        + ", available options: "
+                        + JOB_KIND.keySet()))
                   .build();
         } catch (Exception e) {
             log.error("failed to start job", e);
             throw new FlinkRuntimeException(e.getMessage());
         }
+    }
+
+    private static Configuration getConfiguration(ParameterTool params, StreamExecutionEnvironment env) {
+        var cfg = Configuration.from(params.get("mesh-cfg", "/app/mesh.yml"));
+        var map = cfg.getOptions().stream()
+              .filter(option -> option.getName() != null && option.getValue() != null)
+              .collect(Collectors.toMap(Option::getName, Option::getValue));
+        map.putAll(params.toMap());
+        env.getConfig().setGlobalJobParameters(ParameterTool.fromMap(map));
+        return cfg;
     }
 }

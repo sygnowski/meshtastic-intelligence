@@ -48,8 +48,8 @@ public class TextMessageJob extends JobStub {
               .uid("mc-text-proc")
               .name("mc-text-proc")
               .addSink(new Sink())
-              .uid("pc-text-sink")
-              .name("pc-text-sink");
+              .uid("mc-text-sink")
+              .name("mc-text-sink");
 
         try {
             env.execute(jobName());
