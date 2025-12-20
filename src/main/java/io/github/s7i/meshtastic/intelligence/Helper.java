@@ -1,5 +1,7 @@
 package io.github.s7i.meshtastic.intelligence;
 
+import s7i.flink.Utils;
+
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
@@ -12,9 +14,7 @@ public interface Helper {
 
 
     default LocalDateTime fromEpoch(long timestamp) {
-        return Instant.ofEpochSecond(timestamp)
-              .atZone(ZoneOffset.systemDefault())
-              .toLocalDateTime();
+        return Utils.fromEpoch(timestamp);
     }
 
     default long asUnsigned(int nodeId) {

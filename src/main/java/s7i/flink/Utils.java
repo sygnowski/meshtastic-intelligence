@@ -1,5 +1,8 @@
 package s7i.flink;
 
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -30,5 +33,11 @@ public abstract class Utils {
 
     public static List<String> splitAsList(String s) {
         return split(s).collect(Collectors.toList());
+    }
+
+    public static LocalDateTime fromEpoch(long timestamp) {
+        return Instant.ofEpochSecond(timestamp)
+                .atZone(ZoneOffset.systemDefault())
+                .toLocalDateTime();
     }
 }

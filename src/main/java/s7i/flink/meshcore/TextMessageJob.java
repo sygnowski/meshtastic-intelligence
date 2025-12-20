@@ -1,17 +1,12 @@
 package s7i.flink.meshcore;
 
-import static io.github.s7i.meshtastic.intelligence.TextMessageNotification.TEXT_HTTP_URI;
-
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.common.functions.RichMapFunction;
 import org.apache.flink.api.java.utils.ParameterTool;
 import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.sink.RichSinkFunction;
-import org.apache.flink.streaming.api.functions.windowing.ProcessAllWindowFunction;
+import org.apache.flink.streaming.api.functions.windowing.ProcessWindowFunction;
 import org.apache.flink.streaming.api.windowing.assigners.TumblingEventTimeWindows;
 import org.apache.flink.streaming.api.windowing.time.Time;
 import org.apache.flink.streaming.api.windowing.windows.TimeWindow;
@@ -24,6 +19,12 @@ import s7i.flink.io.Packet;
 import s7i.flink.meshcore.model.ChannelKey;
 import s7i.flink.meshcore.model.MeshcoreDecoded;
 import s7i.flink.meshcore.model.TextMessage;
+
+import java.time.Instant;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import static io.github.s7i.meshtastic.intelligence.TextMessageNotification.TEXT_HTTP_URI;
 
 @Slf4j
 public class TextMessageJob extends JobStub {
@@ -78,30 +79,29 @@ public class TextMessageJob extends JobStub {
     }
 
 
-    public static class WellKnowWindow extends ProcessAllWindowFunction<TextMessage, TextMessage, TimeWindow> {
+    public static class WellKnowWindow extends ProcessWindowFunction<TextMessage, TextMessage, String, TimeWindow> {
 
         @Override
-        public void process(ProcessAllWindowFunction<TextMessage, TextMessage, TimeWindow>.Context context,
-                            Iterable<TextMessage> elements,
-                            Collector<TextMessage> out) throws Exception {
-
+        public void process(String channelHash, ProcessWindowFunction<TextMessage, TextMessage, String, TimeWindow>.Context context, Iterable<TextMessage> iterable, Collector<TextMessage> out) throws Exception {
             var msgBuilder = new StringBuilder();
             var counter = new AtomicInteger();
 
-            elements.forEach(textMessage -> {
+            iterable.forEach(textMessage -> {
                 int msgNo = counter.incrementAndGet();
                 if (msgNo > 1) {
                     msgBuilder.append("\n").append("---").append("\n");
                 }
                 msgBuilder.append(textMessage.getFrom())
                         .append("\n");
-                msgBuilder.append(textMessage.getMessage()).append("\n");
+                msgBuilder.append(textMessage.getMessage());
             });
 
-            out.collect(new TextMessage(
-                    "Messages", msgBuilder.toString()
-            ));
-
+            out.collect(TextMessage.builder()
+                    .from("Messages on channel: " + channelHash + " (" + counter.intValue() + ")")
+                    .timestamp(Instant.now().getEpochSecond())
+                    .message(msgBuilder.toString())
+                    .channelHash(channelHash)
+                    .build());
         }
     }
 
@@ -127,11 +127,14 @@ public class TextMessageJob extends JobStub {
 
     SingleOutputStreamOperator<TextMessage> sideOutputWellKnown(SingleOutputStreamOperator<TextMessage> all) {
         var wellKnow = all.getSideOutput(ProcessDecoded.WELL_KNOWN);
-        wellKnow.windowAll(TumblingEventTimeWindows.of(Time.of(wellKnowWindow, TimeUnit.MINUTES)))
+        wellKnow.keyBy(TextMessage::getChannelHash)
+                .window(TumblingEventTimeWindows.of(Time.of(wellKnowWindow, TimeUnit.MINUTES)))
                 .process(new WellKnowWindow())
                 .uid("well-known-window")
                 .name("well-known-window")
-                .addSink(new Sink());
+                .addSink(new Sink())
+                .uid("sink-well-known")
+                .name("sink-well-known");
 
         return all;
     }

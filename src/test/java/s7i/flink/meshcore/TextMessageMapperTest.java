@@ -4,11 +4,21 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import java.io.IOException;
 import java.util.NoSuchElementException;
+import java.util.Optional;
+
 import org.junit.jupiter.api.Test;
 import s7i.flink.io.Packet;
+import s7i.flink.meshcore.model.TextMessage;
 
 class TextMessageMapperTest {
 
+    static class TextMapperTestImpl implements TextMessageMapper {
+        final MeshcoreDecodedMapper tdm = new MeshcoreDecodedMapper();
+
+        Optional<TextMessage> map(byte[] data) {
+            return map(tdm.mapDecoded(data));
+        }
+    }
 
     @Test
     void test() throws IOException {
@@ -16,20 +26,21 @@ class TextMessageMapperTest {
         var data = TextMessageMapperTest.class.getResourceAsStream("/decoded/msg01.json").readAllBytes();
 
 
-        var tm = new MeshcoreDecodedMapper().mapAsOptional(data).orElseThrow();
+        var textMessage = new TextMapperTestImpl().map(data).orElseThrow();
 
-        assertNotNull(tm);
+        System.out.println(textMessage);
+        assertNotNull(textMessage);
     }
 
 
-//    @Test
-//    void testNotTextMessage() throws IOException {
-//
-//        var data = TextMessageMapperTest.class.getResourceAsStream("/decoded/msg02.json").readAllBytes();
-//
-//        assertThrows(NoSuchElementException.class ,() -> {
-//            new MeshcoreDecodedMapper().mapAsOptional(data).orElseThrow();
-//        });
-//    }
+    @Test
+    void testNotTextMessage() throws IOException {
+
+        var data = TextMessageMapperTest.class.getResourceAsStream("/decoded/msg02.json").readAllBytes();
+
+        assertThrows(NoSuchElementException.class ,() -> {
+            new TextMapperTestImpl().map(data).orElseThrow();
+        });
+    }
 
 }
