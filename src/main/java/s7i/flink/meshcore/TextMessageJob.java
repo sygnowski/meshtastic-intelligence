@@ -19,6 +19,7 @@ import org.apache.flink.util.Collector;
 import s7i.flink.Configuration;
 import s7i.flink.Gotify;
 import s7i.flink.JobStub;
+import s7i.flink.Utils;
 import s7i.flink.io.Packet;
 import s7i.flink.meshcore.model.ChannelKey;
 import s7i.flink.meshcore.model.MeshcoreDecoded;
@@ -39,7 +40,7 @@ public class TextMessageJob extends JobStub {
                 "60"));
     }
 
-    public static class Sink extends RichSinkFunction<TextMessage> {
+    public static class Sink extends RichSinkFunction<TextMessage> implements Utils.WithJobGlobalConfig {
 
         private transient Gotify gotify;
 
@@ -47,13 +48,8 @@ public class TextMessageJob extends JobStub {
         public void open(org.apache.flink.configuration.Configuration parameters) throws Exception {
             super.open(parameters);
 
-            var map = getRuntimeContext()
-                    .getExecutionConfig()
-                    .getGlobalJobParameters()
-                    .toMap();
-
-            var uri = map
-                    .get(TEXT_HTTP_URI);
+            var map = jobConfigMap();
+            var uri = map.get(TEXT_HTTP_URI);
 
             gotify = new Gotify(uri);
         }
