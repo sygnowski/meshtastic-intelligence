@@ -1,16 +1,15 @@
-package s7i.flink.meshcore;
+package s7i.flink.meshcore.model;
 
+import java.io.Serializable;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.experimental.Accessors;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class TextMessage {
+public class TextMessage implements Serializable {
 
     private String from;
     private String message;
-
 }

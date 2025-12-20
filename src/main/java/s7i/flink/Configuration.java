@@ -118,19 +118,12 @@ public class Configuration {
         requireNonNull(flag);
 
         return findOption(option)
-              .map(Configuration::split)
+              .map(Utils::split)
               .stream()
               .flatMap(Function.identity())
               .anyMatch(flag::equals);
     }
 
 
-    public static Stream<String> split(String csv) {
-        if (csv == null) {
-            return Stream.empty();
-        }
-        return Arrays.stream(csv.split("\\,"))
-              .filter(Predicate.not(String::isEmpty))
-              .map(String::trim);
-    }
+
 }

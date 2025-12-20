@@ -1,26 +1,21 @@
 package s7i.flink.meshcore;
 
 import static java.util.Optional.ofNullable;
+import static s7i.flink.meshcore.MeshcoreDecodedMapper.PAYLOAD_TEXT;
 
 import java.util.Optional;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.DeserializationFeature;
-import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.ObjectMapper;
-import s7i.flink.io.Packet;
-import s7i.flink.meshcore.MeshcoreDecoded.Decoded;
-import s7i.flink.meshcore.MeshcoreDecoded.Decrypted;
-import s7i.flink.meshcore.MeshcoreDecoded.Payload;
+import org.slf4j.LoggerFactory;
+import s7i.flink.meshcore.model.MeshcoreDecoded;
+import s7i.flink.meshcore.model.MeshcoreDecoded.Decoded;
+import s7i.flink.meshcore.model.MeshcoreDecoded.Decrypted;
+import s7i.flink.meshcore.model.MeshcoreDecoded.Payload;
+import s7i.flink.meshcore.model.TextMessage;
 
-@Slf4j
-public class TextMessageMapper {
 
-    public static final int PAYLOAD_TEXT = 5;
-    private final ObjectMapper objectMapper = new ObjectMapper()
-          .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+public interface TextMessageMapper {
 
-    public Optional<TextMessage> map(Packet packet) {
+    default Optional<TextMessage> map(MeshcoreDecoded decoded) {
         try {
-            final var decoded = objectMapper.readValue(packet.payload(), MeshcoreDecoded.class);
             if (decoded.getPayloadType() != PAYLOAD_TEXT) {
                 return Optional.empty();
             }
@@ -32,7 +27,9 @@ public class TextMessageMapper {
                         )
                   );
         } catch (Exception e) {
-            log.warn("Parsing issue", e);
+            LoggerFactory
+                  .getLogger(TextMessageMapper.class)
+                  .warn("Parsing issue", e);
             return Optional.empty();
         }
     }

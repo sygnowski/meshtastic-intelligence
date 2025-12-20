@@ -20,6 +20,7 @@ import org.apache.flink.streaming.api.windowing.assigners.TumblingEventTimeWindo
 import org.apache.flink.streaming.api.windowing.time.Time;
 import s7i.flink.Configuration;
 import s7i.flink.JobStub;
+import s7i.flink.Utils;
 
 @Slf4j
 public class TextMessageJob extends JobStub {
@@ -28,7 +29,7 @@ public class TextMessageJob extends JobStub {
     public static final String UNNAMED = "unnamed";
 
     public static List<String> allowedModules(Configuration cfg) {
-        return Configuration.split(cfg.getOption("module.allowed", ANY_MODULE)).collect(Collectors.toList());
+        return Utils.split(cfg.getOption("module.allowed", ANY_MODULE)).collect(Collectors.toList());
     }
 
     public TextMessageJob(ParameterTool params, StreamExecutionEnvironment env, Configuration cfg) {

@@ -1,26 +1,47 @@
 package s7i.flink.meshcore;
 
-
+import java.util.List;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.flink.streaming.api.functions.ProcessFunction;
+import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.configuration.Configuration;
+import org.apache.flink.streaming.api.functions.KeyedProcessFunction;
 import org.apache.flink.util.Collector;
-import s7i.flink.io.Packet;
+import org.apache.flink.util.OutputTag;
+import s7i.flink.Utils;
+import s7i.flink.meshcore.model.ChannelKey;
+import s7i.flink.meshcore.model.MeshcoreDecoded;
+import s7i.flink.meshcore.model.TextMessage;
 
 @Slf4j
-public class ProcessDecoded extends ProcessFunction<Packet, TextMessage> {
+public class ProcessDecoded extends KeyedProcessFunction<ChannelKey, MeshcoreDecoded, TextMessage> implements TextMessageMapper {
 
-    private transient TextMessageMapper mapper;
+    public static final OutputTag<TextMessage> WELL_KNOWN = new OutputTag<>(
+          "well_known",
+          TypeInformation.of(TextMessage.class)
+    );
+    private transient List<String> wellKnowList;
 
     @Override
-    public void open(org.apache.flink.configuration.Configuration parameters) throws Exception {
+    public void open(Configuration parameters) throws Exception {
         super.open(parameters);
 
-        mapper = new TextMessageMapper();
+        wellKnowList = Utils.splitAsList(getRuntimeContext()
+              .getExecutionConfig()
+              .getGlobalJobParameters()
+              .toMap()
+              .get("well-know-channels"));
     }
 
     @Override
-    public void processElement(Packet packet, ProcessFunction<Packet, TextMessage>.Context context, Collector<TextMessage> collector) throws Exception {
+    public void processElement(MeshcoreDecoded value, KeyedProcessFunction<ChannelKey, MeshcoreDecoded, TextMessage>.Context ctx, Collector<TextMessage> out)
+          throws Exception {
 
-        mapper.map(packet).ifPresent(collector::collect);
+        map(value).ifPresent(textMessage -> {
+            if (wellKnowList.contains(ctx.getCurrentKey().getHash())) {
+                out.collect(textMessage);
+            } else {
+                ctx.output(WELL_KNOWN, textMessage);
+            }
+        });
     }
 }
