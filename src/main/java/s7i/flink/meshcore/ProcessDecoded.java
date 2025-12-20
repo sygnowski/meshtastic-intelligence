@@ -37,7 +37,7 @@ public class ProcessDecoded extends KeyedProcessFunction<ChannelKey, MeshcoreDec
           throws Exception {
 
         map(value).ifPresent(textMessage -> {
-            if (wellKnowList.contains(ctx.getCurrentKey().getHash())) {
+            if (!wellKnowList.contains(ctx.getCurrentKey().getHash())) {
                 out.collect(textMessage);
             } else {
                 ctx.output(WELL_KNOWN, textMessage);
