@@ -4,8 +4,8 @@ args=("$@")
 
 FLINK_URL="${FLINK_URL:-http://lab.syg:3381}"
 
-SAVEPOINT="file:/usr/share/flink/savepoints/savepoint-f33b0c-acc369cb66b4"
-JAR_ID="515de6e2-8a87-4e94-b7be-7c8d5a49c2f3_meshtastic-intelligence-0.1-SNAPSHOT-all.jar"
+SAVEPOINT="file:/usr/share/flink/savepoints/savepoint-903c52-62337e91e06f"
+JAR_ID="${JAR_ID}"
 
 list_jars() {
   local jars
@@ -81,6 +81,18 @@ run_job_from_savepoint() {
     "${FLINK_URL}/jars/${JAR_ID}/run" | jq
 }
 
+upload_jar() {
+  JAR_PATH="./build/libs/meshtastic-intelligence-0.1-SNAPSHOT-all.jar"
+  echo "▶ Uploading JAR..."
+  UPLOAD_RESPONSE=$(curl -s -X POST \
+    -H "Expect:" \
+    -F "jarfile=@${JAR_PATH}" \
+    "${FLINK_URL}/jars/upload")
+
+  JAR_ID=$(echo "$UPLOAD_RESPONSE" | jq -r '.filename' | sed 's|.*/||')
+  echo "jarid: ${JAR_ID}"
+}
+
 usage() {
   echo "...."
 }
@@ -90,7 +102,11 @@ case $1 in
     list_jars | jq
     ;;
   run)
+    [[ -z "${JAR_ID}" ]] && echo "missing jar" && exit 1
     run_job_from_savepoint ${JAR_ID} ${SAVEPOINT} "/app/flink-mc.yml"
+    ;;
+  upload)
+    upload_jar
     ;;
   *)
   usage
