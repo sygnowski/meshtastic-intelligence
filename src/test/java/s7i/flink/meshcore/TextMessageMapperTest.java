@@ -7,7 +7,6 @@ import java.util.NoSuchElementException;
 import java.util.Optional;
 
 import org.junit.jupiter.api.Test;
-import s7i.flink.io.Packet;
 import s7i.flink.meshcore.model.TextMessage;
 
 class TextMessageMapperTest {

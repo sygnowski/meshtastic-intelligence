@@ -21,6 +21,7 @@ import s7i.flink.meshcore.model.MeshcoreDecoded;
 import s7i.flink.meshcore.model.TextMessage;
 
 import java.time.Instant;
+import java.util.LinkedHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -57,7 +58,7 @@ public class TextMessageJob extends JobStub {
 
         @Override
         public void invoke(TextMessage value, Context context) throws Exception {
-            gotify.notify(value.getFrom(), value.getMessage());
+            gotify.notify(value.getFrom(), value.getText());
         }
     }
 
@@ -86,20 +87,33 @@ public class TextMessageJob extends JobStub {
             var msgBuilder = new StringBuilder();
             var counter = new AtomicInteger();
 
-            iterable.forEach(textMessage -> {
+            var map = new LinkedHashMap<String, TextMessage>();
+            for (var tm : iterable) {
+                var preset = map.computeIfPresent(tm.getMessageHash(), (k, v) -> {
+                    v.addPath(tm.getPathList().stream().findFirst().orElseThrow());
+                    return v;
+                });
+                if (preset == null) {
+                    map.put(tm.getMessageHash(), tm);
+                }
+            }
+
+            for (String key : map.keySet()) {
+                var textMessage = map.get(key);
+
                 int msgNo = counter.incrementAndGet();
                 if (msgNo > 1) {
                     msgBuilder.append("\n").append("---").append("\n");
                 }
-                msgBuilder.append(textMessage.getFrom())
+                msgBuilder.append(textMessage.title())
                         .append("\n");
-                msgBuilder.append(textMessage.getMessage());
-            });
+                msgBuilder.append(textMessage.message());
+            }
 
             out.collect(TextMessage.builder()
                     .from("Messages on channel: " + channelHash + " (" + counter.intValue() + ")")
                     .timestamp(Instant.now().getEpochSecond())
-                    .message(msgBuilder.toString())
+                    .text(msgBuilder.toString())
                     .channelHash(channelHash)
                     .build());
         }

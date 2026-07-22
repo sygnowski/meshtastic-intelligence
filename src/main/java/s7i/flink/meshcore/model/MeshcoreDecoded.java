@@ -25,6 +25,7 @@ public class MeshcoreDecoded implements Serializable {
     public static class Payload implements Serializable {
         Decoded decoded;
     }
+    private String messageHash;
     private Integer payloadType;
     private List<String> path;
     private Payload payload;
