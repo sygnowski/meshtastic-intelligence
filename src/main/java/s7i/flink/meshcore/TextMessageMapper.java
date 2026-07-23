@@ -26,7 +26,8 @@ public interface TextMessageMapper {
                             .messageHash(decoded.getMessageHash())
                             .timestamp(decrypted.getTimestamp())
                             .channelHash(decoded.getPayload().getDecoded().getChannelHash())
-                            .from(decrypted.getSender()         )
+                            .from(decrypted.getSender())
+                            .text(decrypted.getMessage())
                             .build()
                             .addPath(decoded.getPath())
                     );

@@ -55,7 +55,7 @@ public class ProcessDecoded extends KeyedProcessFunction<ChannelKey, MeshcoreDec
                 ctx.output(WELL_KNOWN, textMessage);
                 wellKnowCounter.inc();
             } else {
-                out.collect(textMessage);
+                out.collect(textMessage.asPretty());
                 specialCounter.inc();
             }
         });

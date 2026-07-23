@@ -2,7 +2,6 @@ package s7i.flink.meshcore.model;
 
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 import lombok.AllArgsConstructor;
@@ -26,7 +25,7 @@ public class TextMessage implements Serializable {
     private String text;
 
     public TextMessage addPath(List<String> path) {
-        pathList.add(Collections.unmodifiableList(path));
+        pathList.add(new ArrayList<>(path));
         return this;
     }
 
@@ -48,7 +47,7 @@ public class TextMessage implements Serializable {
         if (pathList.size() == 1) {
             return String.join("->", pathList.stream().findFirst().orElseThrow()) + "\n";
         } else if (pathList.size() > 1) {
-            StringBuilder sb = new StringBuilder();
+            var sb = new StringBuilder("\n");
             int ln = 0;
             for (var p : pathList) {
                 sb.append( ++ln).append(": ").append(String.join("->", p)).append("\n");
@@ -56,5 +55,12 @@ public class TextMessage implements Serializable {
             return sb.toString();
         }
         return "<no path>";
+    }
+
+    public TextMessage asPretty() {
+        return TextMessage.builder()
+                .from(title())
+                .text(message())
+                .build();
     }
 }
