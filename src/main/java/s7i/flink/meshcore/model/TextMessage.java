@@ -25,7 +25,9 @@ public class TextMessage implements Serializable {
     private String text;
 
     public TextMessage addPath(List<String> path) {
-        pathList.add(new ArrayList<>(path));
+        if (path != null && !path.isEmpty()) {
+            pathList.add(new ArrayList<>(path));
+        }
         return this;
     }
 
@@ -43,14 +45,20 @@ public class TextMessage implements Serializable {
                 + text;
     }
 
+    private StringBuilder pathDetails(StringBuilder sbld, List<String> path) {
+        var size = ": <" + path.size() + ">";
+        sbld.append(size).append(String.join("->", path)).append("\n");
+        return sbld;
+    }
+
     private String path() {
         if (pathList.size() == 1) {
-            return String.join("->", pathList.stream().findFirst().orElseThrow()) + "\n";
+            return pathDetails(new StringBuilder(), pathList.get(0)).toString();
         } else if (pathList.size() > 1) {
             var sb = new StringBuilder("\n");
             int ln = 0;
             for (var p : pathList) {
-                sb.append( ++ln).append(": ").append(String.join("->", p)).append("\n");
+                pathDetails(sb.append(++ln), p);
             }
             return sb.toString();
         }
