@@ -17,6 +17,7 @@ public class Gotify {
     private final String uri;
     private final ObjectMapper objectMapper;
     private final HttpClient httpClient;
+    private final int timeout = 60;
 
     public Gotify(String uri) {
         this.uri = uri;
@@ -26,7 +27,7 @@ public class Gotify {
               .configure(SerializationFeature.INDENT_OUTPUT, true);
 
         httpClient = HttpClient.newBuilder()
-              .connectTimeout(Duration.ofSeconds(60))
+              .connectTimeout(Duration.ofSeconds(timeout))
               .build();
     }
 
@@ -44,6 +45,7 @@ public class Gotify {
                   .uri(URI.create(uri))
                   .header("Content-Type", "application/json")
                   .POST(BodyPublishers.ofString(jsonText))
+                  .timeout(Duration.ofSeconds(timeout))
                   .build();
 
                 httpClient.sendAsync(request, BodyHandlers.ofString())
